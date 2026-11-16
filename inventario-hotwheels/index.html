@@ -128,7 +128,7 @@ textarea.inp{min-height:72px;resize:vertical}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;text-align:left;padding:0;display:flex;flex-direction:column}
 .card .ph{position:relative;aspect-ratio:1/1;background:var(--surface-2);max-width:100%}
-.card .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.card .ph img{width:100%;height:100%;object-fit:contain;display:block}
 .card .badge{position:absolute;top:8px;right:8px;background:var(--ink);color:var(--bg);font-family:var(--f-display);font-weight:700;font-size:18px;padding:2px 9px;border-radius:999px;font-variant-numeric:tabular-nums}
 .card .badge.zero{background:var(--danger);color:#fff}
 .card .tag{position:absolute;left:8px;top:8px;background:var(--warn-bg);color:var(--warn-ink);font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
@@ -193,7 +193,7 @@ details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
 .bl-band span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .bl-num{flex:none;background:var(--flame);color:#1a0d05;font-family:var(--f-display);font-weight:700;font-size:13px;border-radius:999px;padding:1px 8px;font-variant-numeric:tabular-nums}
 .bl-bubble{margin:10px;border-radius:18px;aspect-ratio:1/1;max-width:100%;overflow:hidden;background:repeating-linear-gradient(115deg,var(--surface-2) 0 12px,var(--bg) 12px 24px);border:2px solid var(--line);position:relative}
-.bl-bubble img{width:100%;height:100%;object-fit:cover;display:block}
+.bl-bubble img{width:100%;height:100%;object-fit:contain;display:block;padding:6px}
 .bl-bubble .noimg{width:100%;height:100%}
 .bl-body{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1}
 .bl-name{font-family:var(--f-display);font-weight:700;font-size:20px;line-height:1.02;text-transform:uppercase;overflow-wrap:anywhere;text-wrap:balance}
@@ -210,6 +210,19 @@ details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
 .owner-bar .btn{flex:1 1 150px;min-height:44px;font-size:15px}
 body.visitor .tabs,body.visitor .top,body.visitor .owner-only{display:none!important}
 body.visitor::before{background:var(--bg)}
+
+/* Crop */
+.cropbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.cropbar .btn{min-height:38px;padding:6px 10px;font-size:14px}
+.cropper{position:relative;user-select:none;-webkit-user-select:none;touch-action:none;align-self:center;max-width:100%;line-height:0}
+.cropper img{display:block;max-width:100%;max-height:62vh;width:auto;height:auto;pointer-events:none}
+.crop-box{position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.55);outline:1px solid rgba(0,0,0,.5);cursor:move;touch-action:none}
+.crop-box i{position:absolute;width:28px;height:28px;background:var(--accent);border:2px solid #fff;border-radius:50%;touch-action:none}
+.crop-box i[data-h="nw"]{left:-15px;top:-15px;cursor:nwse-resize}
+.crop-box i[data-h="ne"]{right:-15px;top:-15px;cursor:nesw-resize}
+.crop-box i[data-h="sw"]{left:-15px;bottom:-15px;cursor:nesw-resize}
+.crop-box i[data-h="se"]{right:-15px;bottom:-15px;cursor:nwse-resize}
+.cropper-wrap{overflow:hidden;border-radius:12px;display:flex;justify-content:center;background:#000;padding:16px}
 
 /* Toast */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px);box-shadow:var(--shadow);font-weight:500}
@@ -278,6 +291,7 @@ body.visitor::before{background:var(--bg)}
 
     <form id="addForm" class="view" hidden autocomplete="off">
       <div class="preview"><img id="addImg" alt="Foto del producto"><button type="button" class="btn ghost" id="addRetake">Cambiar foto</button></div>
+      <div class="cropbar" id="cropBar" hidden><span id="cropTxt"></span><button type="button" class="btn ghost" id="cropAdj">Ajustar recorte</button><button type="button" class="btn text" id="cropFull">Usar foto completa</button></div>
       <div id="addStatus" class="reading" hidden></div>
       <div id="addNotices" class="view"></div>
       <label class="field"><span>Nombre</span><input id="fNombre" class="inp big" placeholder="Nombre como aparece en el blister"></label>
@@ -491,7 +505,7 @@ function renderAll(){ renderStats(); renderInventario(); renderVentasRes(); rend
 function openEdit(id){
   const p = byId(id); if(!p) return;
   const panel = openSheet(`
-    ${p.foto ? `<img class="big" src="${blob(p.foto)}" alt="">` : ""}
+    ${p.foto ? `<img class="big" src="${blob(p.foto)}" alt=""><button class="btn ghost" id="eCrop" type="button">Recortar foto</button>` : ""}
     ${(p.pendiente||!p.nombre) ? `<div class="notice warn"><h3>Falta el nombre</h3><p>${esc(p.motivo || "No pude leer el nombre con seguridad.")} Escribe cómo quieres registrarlo.</p></div>` : ""}
     <label class="field"><span>Nombre</span><input id="eNombre" class="inp big" value="${esc(p.nombre)}"></label>
     <label class="field"><span>Precio de venta por pieza</span><div class="money"><span>$</span><input id="ePrecio" inputmode="decimal" placeholder="0.00" value="${precioDe(p) ?? ""}" aria-label="Precio en pesos"></div></label>
@@ -509,6 +523,7 @@ function openEdit(id){
   `);
   stepper(panel);
   $("#eClose").onclick = closeSheet;
+  if($("#eCrop")) $("#eCrop").onclick = () => recortarExistente(p);
   $("#eDel").onclick = () => { $("#eConfirm").hidden = false; $("#eConfirm").scrollIntoView({block:"nearest"}); };
   $("#eDelNo").onclick = () => $("#eConfirm").hidden = true;
   $("#eDelYes").onclick = async () => {
@@ -545,15 +560,129 @@ async function compress(file){
 const F = id => $("#" + id);
 const FIELDS = ["fNombre","fPrecio","fSerie","fNumero","fColor","fAnio","fNotas"];
 
+/* ---------- recorte ---------- */
+function cleanCrop(c, pad){
+  if(!c || typeof c !== "object") return null;
+  let x = Number(c.x), y = Number(c.y), w = Number(c.w), h = Number(c.h);
+  if(![x,y,w,h].every(isFinite)) return null;
+  if(x > 1 || y > 1 || w > 1 || h > 1){ return null; }
+  pad = pad || 0;
+  x -= pad; y -= pad; w += pad*2; h += pad*2;
+  x = Math.max(0, x); y = Math.max(0, y); w = Math.min(1 - x, w); h = Math.min(1 - y, h);
+  return (w > 0.08 && h > 0.08) ? { x, y, w, h } : null;
+}
+async function decode(b){
+  try{ return await createImageBitmap(b); }
+  catch(_){ return await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = URL.createObjectURL(b); }); }
+}
+async function cropBlob(src, c){
+  const img = await decode(src);
+  const W = img.width, H = img.height;
+  const sx = Math.round(c.x*W), sy = Math.round(c.y*H), sw = Math.max(1, Math.round(c.w*W)), sh = Math.max(1, Math.round(c.h*H));
+  const cv = document.createElement("canvas"); cv.width = sw; cv.height = sh;
+  cv.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+  return await new Promise(ok => cv.toBlob(ok, "image/jpeg", 0.88));
+}
+async function aplicarRecorte(n, c, how){
+  try{
+    const b = c ? await cropBlob(n.orig, c) : n.orig;
+    if(S.nuevo !== n) return;
+    n.blob = b; n.crop = c; n.cropHow = c ? how : null;
+    if(n.url) URL.revokeObjectURL(n.url);
+    n.url = URL.createObjectURL(b); F("addImg").src = n.url;
+    renderCropBar();
+  }catch(_){ toast("No se pudo recortar la foto."); }
+}
+function renderCropBar(){
+  const n = S.nuevo; if(!n) return;
+  F("cropBar").hidden = false;
+  F("cropTxt").textContent = n.crop ? (n.cropHow === "auto" ? "Recortada automáticamente al producto." : "Recorte ajustado.") : "Foto completa.";
+  F("cropFull").hidden = !n.crop;
+}
+F("cropAdj").onclick = async () => {
+  const n = S.nuevo; if(!n) return;
+  const url = URL.createObjectURL(n.orig);
+  const c = await abrirRecortador(url, n.crop);
+  URL.revokeObjectURL(url);
+  if(c && S.nuevo === n) aplicarRecorte(n, c, "manual");
+};
+F("cropFull").onclick = () => { if(S.nuevo) aplicarRecorte(S.nuevo, null); };
+
+// Editor: rectangle with four corner handles over the photo. Resolves {x,y,w,h} fractions or null.
+function abrirRecortador(url, inicial){
+  return new Promise(resolve => {
+    let done = false;
+    const fin = v => { if(done) return; done = true; closeSheet(); resolve(v); };
+    openSheet(`<h2>Recortar foto</h2><p class="lead">Arrastra las esquinas para dejar solo el producto.</p>
+      <div class="cropper-wrap"><div class="cropper" id="cropper"><img id="cropImg" src="${url}" alt=""><div class="crop-box" id="cropBox"><i data-h="nw"></i><i data-h="ne"></i><i data-h="sw"></i><i data-h="se"></i></div></div></div>
+      <button class="btn primary block" id="cropOk" type="button">Listo</button>
+      <div class="row"><button class="btn ghost" id="cropAll" type="button">Seleccionar todo</button><button class="btn text" id="cropNo" type="button">Cancelar</button></div>`);
+    const wrap = $("#cropper"), box = $("#cropBox");
+    let c = Object.assign({ x:0.05, y:0.05, w:0.9, h:0.9 }, inicial || {});
+    const MIN = 0.06;
+    const draw = () => { box.style.left = c.x*100+"%"; box.style.top = c.y*100+"%"; box.style.width = c.w*100+"%"; box.style.height = c.h*100+"%"; };
+    draw();
+    let drag = null;
+    const start = e => {
+      e.preventDefault();
+      const r = wrap.getBoundingClientRect();
+      drag = { h: e.target.dataset.h || "move", px: e.clientX, py: e.clientY, r, c0: Object.assign({}, c) };
+      try{ e.target.setPointerCapture(e.pointerId); }catch(_){}
+    };
+    const move = e => {
+      if(!drag) return;
+      const dx = (e.clientX - drag.px) / drag.r.width, dy = (e.clientY - drag.py) / drag.r.height, o = drag.c0;
+      let x1 = o.x, y1 = o.y, x2 = o.x + o.w, y2 = o.y + o.h;
+      if(drag.h === "move"){
+        const nx = Math.min(1 - o.w, Math.max(0, o.x + dx)), ny = Math.min(1 - o.h, Math.max(0, o.y + dy));
+        c = { x:nx, y:ny, w:o.w, h:o.h }; draw(); return;
+      }
+      if(drag.h.includes("w")) x1 = Math.min(x2 - MIN, Math.max(0, o.x + dx));
+      if(drag.h.includes("e")) x2 = Math.max(x1 + MIN, Math.min(1, x2 + dx));
+      if(drag.h.includes("n")) y1 = Math.min(y2 - MIN, Math.max(0, o.y + dy));
+      if(drag.h.includes("s")) y2 = Math.max(y1 + MIN, Math.min(1, y2 + dy));
+      c = { x:x1, y:y1, w:x2 - x1, h:y2 - y1 }; draw();
+    };
+    const end = () => { drag = null; };
+    box.addEventListener("pointerdown", start);
+    $$("#cropBox i").forEach(h => h.addEventListener("pointerdown", e => { e.stopPropagation(); start(e); }));
+    [box, ...$$("#cropBox i")].forEach(el => { el.addEventListener("pointermove", move); el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end); });
+    $("#cropOk").onclick = () => fin((c.w > 0.995 && c.h > 0.995) ? null : c);
+    $("#cropAll").onclick = () => { c = { x:0, y:0, w:1, h:1 }; draw(); };
+    $("#cropNo").onclick = () => fin(undefined);
+    $("#sheet").addEventListener("click", function once(e){ if(e.target.id === "sheet"){ $("#sheet").removeEventListener("click", once); fin(undefined); } });
+  });
+}
+
+async function recortarExistente(p){
+  if(!S.assets){ toast("Solo el dueño puede cambiar fotos."); return; }
+  let orig;
+  try{ const res = await fetch(blob(p.foto)); if(!res.ok) throw 0; orig = await res.blob(); }
+  catch(_){ toast("No pude abrir la foto guardada."); return; }
+  const url = URL.createObjectURL(orig);
+  const c = await abrirRecortador(url, null);
+  URL.revokeObjectURL(url);
+  if(!c){ openEdit(p.id); return; }
+  toast("Guardando foto recortada…");
+  try{
+    const nb = await cropBlob(orig, c);
+    const up = await S.assets.upload(nb, { type:"image/jpeg" });
+    await S.db.doc("productos/" + p.id).update({ foto: up.id, actualizado: Date.now() });
+    S.assets.delete(p.foto).catch(() => {});
+    toast("Foto recortada");
+    setTimeout(() => openEdit(p.id), 300);
+  }catch(e){ toast("No se pudo guardar el recorte (" + (e.code||"error") + ")"); }
+}
+
 async function onPick(e){
   const file = e.target.files && e.target.files[0]; e.target.value = "";
   if(!file) return;
   let b;
   try{ b = await compress(file); }catch(_){ toast("No pude abrir esa imagen. Prueba con otra."); return; }
   if(S.nuevo && S.nuevo.url) URL.revokeObjectURL(S.nuevo.url);
-  S.nuevo = { blob:b, url:URL.createObjectURL(b), ai:null, status:"idle", touched:{}, dupId:null, dupSrc:null, dupDecision:null, varianteId:null, help:null, foreign:null };
+  S.nuevo = { orig:b, blob:b, crop:null, url:URL.createObjectURL(b), ai:null, status:"idle", touched:{}, dupId:null, dupSrc:null, dupDecision:null, varianteId:null, help:null, foreign:null };
   FIELDS.forEach(f => F(f).value = ""); F("fCant").value = 1;
-  F("addImg").src = S.nuevo.url;
+  F("addImg").src = S.nuevo.url; renderCropBar();
   $("#addStart").hidden = true; $("#addForm").hidden = false;
   renderNotices(); renderChips();
   identificar();
@@ -572,7 +701,7 @@ function resetAdd(){
   if(S.nuevo && S.nuevo.url) URL.revokeObjectURL(S.nuevo.url);
   S.nuevo = null;
   $("#addForm").hidden = true; $("#addStart").hidden = false;
-  F("addNotices").innerHTML = ""; F("addStatus").hidden = true;
+  F("addNotices").innerHTML = ""; F("addStatus").hidden = true; F("cropBar").hidden = true;
 }
 
 function inventarioParaPrompt(){
@@ -593,14 +722,15 @@ Reglas:
 3. Si no puedes leer el nombre con seguridad (borroso, tapado, cortado, no se ve), pon "requiere_ayuda": true, explica en "motivo_ayuda" en español y en "nombre" tu mejor intento o null.
 4. "idioma_nombre": código ISO 639-1 del idioma del nombre (es, en, ja, fr...). Nombres propios de autos (p. ej. "Nissan Skyline GT-R") cuentan como "en".
 5. Compara con el inventario actual de abajo. Si el producto de la foto es el mismo modelo que uno del inventario (mismo nombre y misma versión: color/serie compatibles), pon su id en "duplicado_id". Si tiene el mismo nombre pero claramente es otra versión (otro color o serie), pon ese id en "posible_variante_id" y deja "duplicado_id" en null.
+6. "recorte": el rectángulo que encierra SOLO el producto (el blister/empaque completo, o el carrito si está suelto), sin el fondo, la mesa ni otros objetos. Da fracciones de 0 a 1 del ancho y alto de la foto: x,y = esquina superior izquierda; w,h = ancho y alto. No cortes ninguna parte del producto. Si el producto ya llena la foto, usa {"x":0,"y":0,"w":1,"h":1}.
 
 Inventario actual (id | nombre | serie | color | nº):
 ${inventarioParaPrompt()}
 
 Formato exacto:
-{"nombre": string|null, "es_hot_wheels": boolean, "serie": string|null, "numero_coleccion": string|null, "color": string|null, "anio": string|null, "idioma_nombre": string, "traduccion_sugerida": string|null, "confianza": "alta"|"media"|"baja", "requiere_ayuda": boolean, "motivo_ayuda": string|null, "duplicado_id": string|null, "posible_variante_id": string|null}`;
+{"nombre": string|null, "es_hot_wheels": boolean, "serie": string|null, "numero_coleccion": string|null, "color": string|null, "anio": string|null, "idioma_nombre": string, "traduccion_sugerida": string|null, "confianza": "alta"|"media"|"baja", "requiere_ayuda": boolean, "motivo_ayuda": string|null, "duplicado_id": string|null, "posible_variante_id": string|null, "recorte": {"x": number, "y": number, "w": number, "h": number}}`;
   try{
-    const r = await S.sample.json(prompt, { images:[n.blob], signal:n.ctl.signal });
+    const r = await S.sample.json(prompt, { images:[n.orig], signal:n.ctl.signal });
     if(S.nuevo !== n) return;
     aplicar(r || {});
   }catch(e){
@@ -622,6 +752,8 @@ function aplicar(r){
   if(!n.foreign) set("fNombre", nombre);
   set("fSerie", r.serie); set("fNumero", r.numero_coleccion); set("fColor", r.color); set("fAnio", r.anio);
   n.esHW = !!r.es_hot_wheels;
+  const rc = cleanCrop(r.recorte, 0.02);
+  if(rc && (rc.w < 0.97 || rc.h < 0.97)) aplicarRecorte(n, rc, "auto");
   if(r.duplicado_id && byId(r.duplicado_id)){ n.dupId = r.duplicado_id; n.dupSrc = "ai"; }
   else if(r.posible_variante_id && byId(r.posible_variante_id)) n.varianteId = r.posible_variante_id;
   if(!n.dupId) checkLocalDup(true);

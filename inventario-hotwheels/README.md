@@ -10,6 +10,7 @@ App móvil (página web) para llevar el inventario de carritos con foto.
   y lo completas después desde el filtro *Sin nombre*).
 - **Vender**: escribes o dictas el nombre, confirmas que el carrito de la pantalla es el
   correcto, indicas cuántos se vendieron y se restan del inventario (con opción de deshacer).
+- **Recorte**: la foto se recorta sola al producto (Claude marca dónde está el blister); se puede ajustar arrastrando las esquinas o recortar después desde Inventario.
 - **Precio**: se captura después de la foto (y se edita desde Inventario); las ventas guardan el total.
 - **Inventario**: cuadrícula con foto, precio y existencia; filtros Sin nombre / Con repetidos / Sin precio / Agotados.
 - **Catálogo** (`#catalogo`): página para clientes con diseño de blister, precio, existencias,
