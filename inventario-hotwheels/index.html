@@ -1,0 +1,772 @@
+<title>Inventario Hot Wheels</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-column mobile app — sticky header with stock totals, three views, fixed bottom tab bar. Asphalt neutrals + track orange. */
+:root{
+  --bg:#eceef1; --surface:#ffffff; --surface-2:#f5f6f8; --ink:#15181c; --muted:#5b636d; --line:#d6dae0;
+  --accent:#e8550f; --accent-ink:#ffffff; --accent-soft:#fde6d9;
+  --warn-bg:#fdf1dc; --warn-ink:#7a4a05; --warn-line:#efc77d;
+  --dup-bg:#fde4e1; --dup-ink:#8a1f15; --dup-line:#f0a59b;
+  --ok:#17804a; --danger:#c0352a;
+  --shadow:0 1px 2px rgba(20,24,28,.06),0 6px 18px rgba(20,24,28,.06);
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111316; --surface:#1b1e23; --surface-2:#22262c; --ink:#eef0f3; --muted:#9aa3ae; --line:#2e333a;
+  --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2214;
+  --warn-bg:#33270f; --warn-ink:#f4c56c; --warn-line:#5e4618;
+  --dup-bg:#3a1915; --dup-ink:#ffaaa0; --dup-line:#6b2a22;
+  --ok:#4fd08a; --danger:#ff6b5e; --shadow:0 1px 2px rgba(0,0,0,.4);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111316; --surface:#1b1e23; --surface-2:#22262c; --ink:#eef0f3; --muted:#9aa3ae; --line:#2e333a;
+  --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2214;
+  --warn-bg:#33270f; --warn-ink:#f4c56c; --warn-line:#5e4618;
+  --dup-bg:#3a1915; --dup-ink:#ffaaa0; --dup-line:#6b2a22;
+  --ok:#4fd08a; --danger:#ff6b5e; --shadow:0 1px 2px rgba(0,0,0,.4);
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:720px;margin:0 auto}
+
+/* Header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;padding-block:10px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.02em;text-transform:uppercase;line-height:1;flex:1;min-width:0}
+.brand small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-top:3px}
+.stats{display:flex;gap:14px}
+.stat{text-align:right}
+.stat b{display:block;font-family:var(--f-display);font-size:22px;line-height:1;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.track{height:4px;background:repeating-linear-gradient(90deg,var(--accent) 0 28px,transparent 28px 34px)}
+
+[hidden]{display:none!important}
+main{padding-block:16px calc(96px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+.view{display:flex;flex-direction:column;gap:16px}
+h2{font-family:var(--f-display);font-weight:700;font-size:26px;text-transform:uppercase;letter-spacing:.02em;margin:0;line-height:1.05;text-wrap:balance}
+.lead{color:var(--muted);margin:0}
+.banner{background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-line);border-radius:var(--r);padding:10px 12px;font-size:14px}
+
+/* Buttons */
+.btn{appearance:none;border:1px solid transparent;border-radius:10px;padding:12px 16px;font-weight:600;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;min-height:48px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.btn.text{background:none;color:var(--muted);min-height:40px;padding:8px}
+.btn.danger{background:var(--danger);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.block{width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>.btn{flex:1 1 140px}
+
+/* Capture */
+.shot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:220px;border:2px dashed var(--accent);border-radius:16px;background:var(--accent-soft);color:var(--ink);cursor:pointer;text-align:center;padding:20px}
+.shot svg{width:56px;height:56px;color:var(--accent)}
+.shot strong{font-family:var(--f-display);font-size:26px;text-transform:uppercase;letter-spacing:.02em}
+.shot span{color:var(--muted);font-size:14px;max-width:32ch}
+
+/* Form */
+.preview{position:relative;border-radius:14px;overflow:hidden;background:var(--surface-2);border:1px solid var(--line)}
+.preview img{display:block;width:100%;max-height:360px;object-fit:contain;background:var(--surface-2)}
+.preview button{position:absolute;right:10px;bottom:10px;min-height:38px;padding:6px 12px;font-size:14px}
+.reading{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--muted)}
+.spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:spin 0.8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field>span{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.inp{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px;min-height:48px}
+textarea.inp{min-height:72px;resize:vertical}
+.inp.big{font-family:var(--f-display);font-size:24px;font-weight:600;letter-spacing:.01em}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 12px;font-size:14px;cursor:pointer;min-height:38px}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stepper{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface);width:max-content;max-width:100%}
+.stepper button{width:52px;border:0;background:var(--surface-2);font-size:24px;font-weight:600;cursor:pointer}
+.stepper input{width:70px;border:0;text-align:center;font-family:var(--f-display);font-size:26px;font-weight:700;background:var(--surface);font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.stepper input::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* Notices */
+.notice{border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:10px;border:1px solid}
+.notice.warn{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--warn-line)}
+.notice.dup{background:var(--dup-bg);color:var(--dup-ink);border-color:var(--dup-line)}
+.notice h3{margin:0;font-size:15px;text-transform:uppercase;letter-spacing:.05em}
+.notice p{margin:0;font-size:15px}
+.notice .btn{min-height:44px;font-size:15px}
+.notice .btn.ghost{color:var(--ink)}
+.match{display:flex;gap:12px;align-items:center;background:var(--surface);color:var(--ink);border-radius:10px;padding:8px}
+.match img,.match .noimg{width:64px;height:64px;border-radius:8px;object-fit:cover;flex:none;background:var(--surface-2)}
+.match div{min-width:0}
+.match b{display:block;overflow-wrap:anywhere}
+.match small{color:var(--muted)}
+
+/* Search */
+.search{display:flex;gap:8px}
+.search .inp{flex:1;min-width:0}
+.mic{width:52px;flex:none;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:grid;place-items:center}
+.mic svg{width:22px;height:22px}
+.mic.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+/* Lists */
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px;cursor:pointer;text-align:left;width:100%}
+.item img,.item .noimg{width:64px;height:64px;border-radius:8px;object-fit:cover;flex:none;background:var(--surface-2)}
+.item .info{flex:1;min-width:0}
+.item .name{font-weight:600;overflow-wrap:anywhere}
+.item .meta{font-size:13px;color:var(--muted)}
+.qty{font-family:var(--f-display);font-weight:700;font-size:24px;font-variant-numeric:tabular-nums;padding-right:6px}
+.qty.zero{color:var(--danger)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;text-align:left;padding:0;display:flex;flex-direction:column}
+.card .ph{position:relative;aspect-ratio:1/1;background:var(--surface-2);max-width:100%}
+.card .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.card .badge{position:absolute;top:8px;right:8px;background:var(--ink);color:var(--bg);font-family:var(--f-display);font-weight:700;font-size:18px;padding:2px 9px;border-radius:999px;font-variant-numeric:tabular-nums}
+.card .badge.zero{background:var(--danger);color:#fff}
+.card .tag{position:absolute;left:8px;top:8px;background:var(--warn-bg);color:var(--warn-ink);font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
+.card .cap{padding:8px 10px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.card .cap b{font-size:15px;line-height:1.2;overflow-wrap:anywhere}
+.card .cap small{color:var(--muted);font-size:12px}
+.noimg{display:grid;place-items:center;color:var(--muted)}
+.noimg svg{width:40%;height:40%}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:22px 16px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:12px;align-items:center}
+.empty b{color:var(--ink);font-size:17px}
+details.sales{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:4px 14px}
+details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
+.sale{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.sale span:first-child{min-width:0;overflow-wrap:anywhere}
+.sale time{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* Tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs .wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding-block:6px}
+.tab{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:10px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;min-height:54px;justify-content:center}
+.tab svg{width:24px;height:24px}
+.tab[aria-current="page"]{color:var(--ink);background:var(--surface-2)}
+.tab.add{color:var(--accent-ink);background:var(--accent)}
+.tab.add[aria-current="page"]{color:var(--accent-ink);background:var(--accent);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+
+/* Sheet */
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(10,12,14,.55);display:flex;align-items:flex-end;justify-content:center}
+.panel{background:var(--bg);width:100%;max-width:720px;max-height:92%;overflow:auto;border-radius:18px 18px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.panel .big{width:100%;max-height:300px;object-fit:contain;border-radius:12px;background:var(--surface-2);display:block}
+.panel .q{font-size:20px;font-weight:600;margin:0}
+.grab{width:44px;height:5px;border-radius:9px;background:var(--line);align-self:center}
+.kv{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--muted);font-size:14px}
+.kv b{color:var(--ink);font-weight:600}
+
+/* Toast */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px);box-shadow:var(--shadow);font-weight:500}
+.toast button{background:none;border:0;color:var(--accent);font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;padding:4px}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">Inventario Hot Wheels<small id="sync">Conectando…</small></div>
+    <div class="stats">
+      <div class="stat"><b id="stModelos">–</b><span>Modelos</span></div>
+      <div class="stat"><b id="stPiezas">–</b><span>Piezas</span></div>
+    </div>
+  </div>
+  <div class="track" aria-hidden="true"></div>
+</header>
+
+<main class="wrap">
+  <div id="globalBanner" class="banner" hidden></div>
+
+  <!-- INVENTARIO -->
+  <section id="v-inventario" class="view">
+    <div>
+      <h2>Mi inventario</h2>
+      <p class="lead" id="invLead">Toca un carrito para editar nombre, cantidad o notas.</p>
+    </div>
+    <div class="search"><input id="invQ" class="inp" type="search" placeholder="Filtrar por nombre, serie o color" autocomplete="off"></div>
+    <div class="chips" id="invFiltros">
+      <button class="chip on" data-f="todos">Todos</button>
+      <button class="chip" data-f="pendientes">Sin nombre</button>
+      <button class="chip" data-f="repetidos">Con repetidos</button>
+      <button class="chip" data-f="agotados">Agotados</button>
+    </div>
+    <div id="invCards" class="cards"></div>
+    <div id="invEmpty" class="empty" hidden>
+      <b>Tu inventario está vacío</b>
+      <span>Toma la foto del primer blister. Claude lee el nombre y te avisa si ya lo tienes.</span>
+      <a class="btn primary" href="#agregar">Agregar el primero</a>
+    </div>
+  </section>
+
+  <!-- AGREGAR -->
+  <section id="v-agregar" class="view" hidden>
+    <div id="addStart" class="view">
+      <div>
+        <h2>Agregar producto</h2>
+        <p class="lead">Foto de frente al blister, con el nombre legible.</p>
+      </div>
+      <label class="shot" for="camIn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="4"/></svg>
+        <strong>Tomar foto</strong>
+        <span>Leo el nombre tal como está en el blister y reviso si es repetido.</span>
+      </label>
+      <input id="camIn" type="file" accept="image/*" capture="environment" hidden>
+      <label class="btn ghost block" for="galIn">Elegir foto de la galería</label>
+      <input id="galIn" type="file" accept="image/*" hidden>
+      <p class="lead" id="addAiNote" hidden></p>
+    </div>
+
+    <form id="addForm" class="view" hidden autocomplete="off">
+      <div class="preview"><img id="addImg" alt="Foto del producto"><button type="button" class="btn ghost" id="addRetake">Cambiar foto</button></div>
+      <div id="addStatus" class="reading" hidden></div>
+      <div id="addNotices" class="view"></div>
+      <label class="field"><span>Nombre</span><input id="fNombre" class="inp big" placeholder="Nombre como aparece en el blister"></label>
+      <div id="nameChips" class="chips" hidden></div>
+      <div class="grid2">
+        <label class="field"><span>Serie</span><input id="fSerie" class="inp" placeholder="HW Exotics"></label>
+        <label class="field"><span>Nº colección</span><input id="fNumero" class="inp" placeholder="45/250"></label>
+        <label class="field"><span>Color</span><input id="fColor" class="inp" placeholder="Rojo"></label>
+        <label class="field"><span>Año</span><input id="fAnio" class="inp" inputmode="numeric" placeholder="2026"></label>
+      </div>
+      <div class="field"><span>Cantidad</span>
+        <div class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input id="fCant" type="number" min="1" value="1" inputmode="numeric" aria-label="Cantidad"><button type="button" data-step="1" aria-label="Más">+</button></div>
+      </div>
+      <label class="field"><span>Notas</span><textarea id="fNotas" class="inp" placeholder="Precio, estado del blister, ubicación…"></textarea></label>
+      <button type="submit" class="btn primary block" id="addSave">Guardar en inventario</button>
+      <div class="row">
+        <button type="button" class="btn ghost" id="addPend">Guardar sin nombre por ahora</button>
+        <button type="button" class="btn text" id="addCancel">Cancelar</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- VENDER -->
+  <section id="v-vender" class="view" hidden>
+    <div>
+      <h2>Registrar venta</h2>
+      <p class="lead">Dime el nombre. Cuando aparezca el carrito correcto, confírmalo e indica cuántos vendiste.</p>
+    </div>
+    <div class="search">
+      <input id="venQ" class="inp big" type="search" placeholder="Nombre del carrito" autocomplete="off">
+      <button class="mic" id="mic" type="button" aria-label="Dictar nombre" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+    </div>
+    <div id="venRes" class="list"></div>
+    <div id="venNone" class="empty" hidden>
+      <b id="venNoneTxt">No encontré ese nombre</b>
+      <span>Puede estar escrito distinto en el inventario.</span>
+      <button class="btn primary" id="venAi" type="button">Buscar con Claude</button>
+    </div>
+    <details class="sales" id="salesBox">
+      <summary>Ventas recientes</summary>
+      <div id="salesList"></div>
+    </details>
+  </section>
+</main>
+
+<nav class="tabs" aria-label="Secciones">
+  <div class="wrap">
+    <a class="tab" href="#inventario" data-tab="inventario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Inventario</a>
+    <a class="tab add" href="#agregar" data-tab="agregar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Agregar</a>
+    <a class="tab" href="#vender" data-tab="vender"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Vender</a>
+  </div>
+</nav>
+
+<div class="sheet" id="sheet" hidden><div class="panel" id="panel" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden role="status"><span id="toastTxt"></span><button id="toastAct" hidden></button></div>
+
+<script>
+(function(){
+"use strict";
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const CAR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 15v-3l2-1 2-4h8l3 4 3 1v3h-2"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path d="M9 16h6"/></svg>';
+
+const S = {
+  db:null, assets:null, sample:null, imgOk:false, dict:null,
+  productos:[], ventas:[], loaded:false,
+  filtro:"todos", nuevo:null
+};
+
+/* ---------- utils ---------- */
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm = s => String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+const blob = id => id ? "/_blob/" + id : "";
+const thumb = (p, cls="") => p && p.foto ? `<img class="${cls}" src="${blob(p.foto)}" alt="" loading="lazy">` : `<div class="noimg ${cls}">${CAR_SVG}</div>`;
+const byId = id => S.productos.find(p => p.id === id);
+const cant = p => Math.max(0, Number(p && p.cantidad) || 0);
+const meta = p => [p.serie, p.numero, p.color, p.anio].filter(Boolean).map(esc).join(" · ");
+const errTxt = c => ({
+  not_granted:"No diste permiso para usar Claude en esta página.",
+  rate_limited:"Demasiadas consultas seguidas. Espera un momento.",
+  sampling_disabled:"Claude no está disponible en esta cuenta.",
+  image_rejected:"La foto no se pudo leer. Prueba con otra.",
+  invalid_json:"Claude respondió en un formato inesperado. Intenta de nuevo.",
+  refused:"Claude no pudo procesar esta foto.",
+  session_expired:"Tu sesión expiró. Vuelve a iniciar sesión."
+}[c] || "No se pudo completar. Intenta de nuevo.");
+
+function score(p, q){
+  const nq = norm(q); if(!nq) return 0;
+  const name = norm(p.nombre), hay = name + " " + norm(p.serie) + " " + norm(p.color);
+  if(name === nq) return 3;
+  if(name.startsWith(nq)) return 2.5;
+  if(hay.includes(nq)) return 2;
+  const toks = nq.split(" "), words = hay.split(" ");
+  let hit = 0;
+  for(const t of toks){ if(words.some(w => w.startsWith(t) || (t.length>3 && w.includes(t)))) hit++; }
+  return hit / toks.length;
+}
+function search(q, list=S.productos){
+  return list.map(p => [p, score(p,q)]).filter(x => x[1] >= 0.6).sort((a,b) => b[1]-a[1] || norm(a[0].nombre).localeCompare(norm(b[0].nombre))).map(x => x[0]);
+}
+
+/* ---------- toast / sheet ---------- */
+let toastT;
+function toast(msg, actLabel, act){
+  $("#toastTxt").textContent = msg;
+  const b = $("#toastAct");
+  b.hidden = !actLabel; b.textContent = actLabel || "";
+  b.onclick = () => { $("#toast").hidden = true; act && act(); };
+  $("#toast").hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => $("#toast").hidden = true, actLabel ? 7000 : 3500);
+}
+function openSheet(html){ $("#panel").innerHTML = '<div class="grab"></div>' + html; $("#sheet").hidden = false; return $("#panel"); }
+function closeSheet(){ $("#sheet").hidden = true; $("#panel").innerHTML = ""; }
+$("#sheet").addEventListener("click", e => { if(e.target.id === "sheet") closeSheet(); });
+
+function stepper(root){
+  $$("[data-step]", root).forEach(b => b.addEventListener("click", () => {
+    const inp = b.parentElement.querySelector("input");
+    const min = Number(inp.min || 0), max = inp.max ? Number(inp.max) : Infinity;
+    inp.value = Math.min(max, Math.max(min, (Number(inp.value) || 0) + Number(b.dataset.step)));
+    inp.dispatchEvent(new Event("input"));
+  }));
+}
+stepper(document);
+
+/* ---------- routing ---------- */
+const VIEWS = ["inventario","agregar","vender"];
+function route(){
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "inventario";
+  VIEWS.forEach(x => $("#v-"+x).hidden = x !== v);
+  $$(".tab").forEach(t => { if(t.dataset.tab === v) t.setAttribute("aria-current","page"); else t.removeAttribute("aria-current"); });
+  if(v === "vender") setTimeout(() => $("#venQ").focus(), 50);
+  window.scrollTo(0,0);
+}
+window.addEventListener("hashchange", route);
+route();
+
+/* ---------- render ---------- */
+function renderStats(){
+  $("#stModelos").textContent = S.productos.length;
+  $("#stPiezas").textContent = S.productos.reduce((a,p) => a + cant(p), 0);
+}
+function renderInventario(){
+  const q = $("#invQ").value;
+  let list = q.trim() ? search(q) : S.productos.slice().sort((a,b) => (b.creado||0) - (a.creado||0));
+  if(S.filtro === "pendientes") list = list.filter(p => p.pendiente || !p.nombre);
+  if(S.filtro === "repetidos") list = list.filter(p => cant(p) > 1);
+  if(S.filtro === "agotados") list = list.filter(p => cant(p) === 0);
+  const pend = S.productos.filter(p => p.pendiente || !p.nombre).length;
+  $("#invLead").textContent = pend ? `${pend} sin nombre. Toca cada uno para escribir cómo registrarlo.` : "Toca un carrito para editar nombre, cantidad o notas.";
+  $("#invEmpty").hidden = !(S.loaded && S.productos.length === 0);
+  $("#invCards").innerHTML = list.map(p => `
+    <button class="card" data-id="${esc(p.id)}">
+      <div class="ph">${thumb(p)}${(p.pendiente||!p.nombre) ? '<span class="tag">Sin nombre</span>' : ""}<span class="badge ${cant(p)===0?"zero":""}">×${cant(p)}</span></div>
+      <div class="cap"><b>${esc(p.nombre || "Sin nombre")}</b><small>${meta(p) || "&nbsp;"}</small></div>
+    </button>`).join("") || (S.productos.length ? '<p class="lead">Nada coincide con el filtro.</p>' : "");
+}
+$("#invCards").addEventListener("click", e => { const c = e.target.closest(".card"); if(c) openEdit(c.dataset.id); });
+$("#invQ").addEventListener("input", renderInventario);
+$("#invFiltros").addEventListener("click", e => {
+  const c = e.target.closest(".chip"); if(!c) return;
+  S.filtro = c.dataset.f; $$("#invFiltros .chip").forEach(x => x.classList.toggle("on", x === c)); renderInventario();
+});
+
+function renderVentas(){
+  const fmt = new Intl.DateTimeFormat("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+  $("#salesList").innerHTML = S.ventas.length ? S.ventas.map(v => `<div class="sale"><span><b>${Number(v.cantidad)||0}×</b> ${esc(v.nombre||"Producto")}</span><time>${fmt.format(new Date(v.fecha||0))}</time></div>`).join("") : '<p class="lead" style="padding-bottom:12px">Aún no hay ventas registradas.</p>';
+}
+function renderAll(){ renderStats(); renderInventario(); renderVentasRes(); renderVentas(); if(S.nuevo) renderNotices(); }
+
+/* ---------- edit sheet ---------- */
+function openEdit(id){
+  const p = byId(id); if(!p) return;
+  const panel = openSheet(`
+    ${p.foto ? `<img class="big" src="${blob(p.foto)}" alt="">` : ""}
+    ${(p.pendiente||!p.nombre) ? `<div class="notice warn"><h3>Falta el nombre</h3><p>${esc(p.motivo || "No pude leer el nombre con seguridad.")} Escribe cómo quieres registrarlo.</p></div>` : ""}
+    <label class="field"><span>Nombre</span><input id="eNombre" class="inp big" value="${esc(p.nombre)}"></label>
+    <div class="grid2">
+      <label class="field"><span>Serie</span><input id="eSerie" class="inp" value="${esc(p.serie)}"></label>
+      <label class="field"><span>Nº colección</span><input id="eNumero" class="inp" value="${esc(p.numero)}"></label>
+      <label class="field"><span>Color</span><input id="eColor" class="inp" value="${esc(p.color)}"></label>
+      <label class="field"><span>Año</span><input id="eAnio" class="inp" value="${esc(p.anio)}"></label>
+    </div>
+    <div class="field"><span>Existencia</span><div class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input id="eCant" type="number" min="0" value="${cant(p)}" inputmode="numeric" aria-label="Existencia"><button type="button" data-step="1" aria-label="Más">+</button></div></div>
+    <label class="field"><span>Notas</span><textarea id="eNotas" class="inp">${esc(p.notas)}</textarea></label>
+    <button class="btn primary block" id="eSave">Guardar cambios</button>
+    <div class="row"><button class="btn ghost" id="eDel">Eliminar</button><button class="btn text" id="eClose">Cerrar</button></div>
+    <div id="eConfirm" class="notice dup" hidden><p>¿Eliminar <b>${esc(p.nombre || "este producto")}</b> y su foto? No se puede deshacer.</p><div class="row"><button class="btn danger" id="eDelYes">Sí, eliminar</button><button class="btn ghost" id="eDelNo">No</button></div></div>
+  `);
+  stepper(panel);
+  $("#eClose").onclick = closeSheet;
+  $("#eDel").onclick = () => { $("#eConfirm").hidden = false; $("#eConfirm").scrollIntoView({block:"nearest"}); };
+  $("#eDelNo").onclick = () => $("#eConfirm").hidden = true;
+  $("#eDelYes").onclick = async () => {
+    try{
+      await S.db.doc("productos/" + p.id).delete();
+      if(p.foto && S.assets) S.assets.delete(p.foto).catch(() => {});
+      closeSheet(); toast("Eliminado");
+    }catch(e){ toast("No se pudo eliminar (" + (e.code||"error") + ")"); }
+  };
+  $("#eSave").onclick = async () => {
+    const nombre = $("#eNombre").value.trim();
+    const data = { nombre, pendiente: !nombre, serie: $("#eSerie").value.trim(), numero: $("#eNumero").value.trim(), color: $("#eColor").value.trim(), anio: $("#eAnio").value.trim(), cantidad: Math.max(0, parseInt($("#eCant").value,10) || 0), notas: $("#eNotas").value.trim(), actualizado: Date.now() };
+    const otro = nombre && S.productos.find(x => x.id !== p.id && norm(x.nombre) === norm(nombre) && norm(x.color) === norm(data.color));
+    try{
+      await S.db.doc("productos/" + p.id).update(data);
+      closeSheet();
+      toast(otro ? `Guardado. Ojo: ya existe otro “${otro.nombre}” en el inventario.` : "Cambios guardados");
+    }catch(e){ toast("No se pudo guardar (" + (e.code||"error") + ")"); }
+  };
+}
+
+/* ---------- ADD FLOW ---------- */
+async function compress(file){
+  let src;
+  try{ src = await createImageBitmap(file, {imageOrientation:"from-image"}); }
+  catch(_){
+    src = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = URL.createObjectURL(file); });
+  }
+  const w = src.width, h = src.height, k = Math.min(1, 1600 / Math.max(w, h));
+  const c = document.createElement("canvas"); c.width = Math.round(w*k); c.height = Math.round(h*k);
+  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  return await new Promise(ok => c.toBlob(ok, "image/jpeg", 0.85));
+}
+const F = id => $("#" + id);
+const FIELDS = ["fNombre","fSerie","fNumero","fColor","fAnio","fNotas"];
+
+async function onPick(e){
+  const file = e.target.files && e.target.files[0]; e.target.value = "";
+  if(!file) return;
+  let b;
+  try{ b = await compress(file); }catch(_){ toast("No pude abrir esa imagen. Prueba con otra."); return; }
+  if(S.nuevo && S.nuevo.url) URL.revokeObjectURL(S.nuevo.url);
+  S.nuevo = { blob:b, url:URL.createObjectURL(b), ai:null, status:"idle", touched:{}, dupId:null, dupSrc:null, dupDecision:null, varianteId:null, help:null, foreign:null };
+  FIELDS.forEach(f => F(f).value = ""); F("fCant").value = 1;
+  F("addImg").src = S.nuevo.url;
+  $("#addStart").hidden = true; $("#addForm").hidden = false;
+  renderNotices(); renderChips();
+  identificar();
+}
+F("camIn").addEventListener("change", onPick);
+F("galIn").addEventListener("change", onPick);
+F("addRetake").onclick = () => F("camIn").click();
+F("addCancel").onclick = resetAdd;
+FIELDS.forEach(f => F(f).addEventListener("input", () => { if(S.nuevo) S.nuevo.touched[f] = true; }));
+let dupT;
+F("fNombre").addEventListener("input", () => { clearTimeout(dupT); dupT = setTimeout(checkLocalDup, 300); });
+F("fColor").addEventListener("input", () => { clearTimeout(dupT); dupT = setTimeout(checkLocalDup, 300); });
+
+function resetAdd(){
+  if(S.nuevo && S.nuevo.ctl) S.nuevo.ctl.abort();
+  if(S.nuevo && S.nuevo.url) URL.revokeObjectURL(S.nuevo.url);
+  S.nuevo = null;
+  $("#addForm").hidden = true; $("#addStart").hidden = false;
+  F("addNotices").innerHTML = ""; F("addStatus").hidden = true;
+}
+
+function inventarioParaPrompt(){
+  return S.productos.filter(p => p.nombre).slice(0, 1500)
+    .map(p => `${p.id} | ${p.nombre} | ${p.serie||""} | ${p.color||""} | ${p.numero||""}`).join("\n") || "(vacío)";
+}
+
+async function identificar(){
+  const n = S.nuevo;
+  if(!S.sample || !S.imgOk){ n.status = "manual"; renderNotices(); F("fNombre").focus(); return; }
+  n.status = "leyendo"; n.ctl = new AbortController(); renderNotices();
+  const prompt =
+`Eres el asistente de un inventario de juguetes para vender. La mayoría son carritos Hot Wheels en blister. Mira la foto y responde SOLO con un objeto JSON.
+
+Reglas:
+1. Si es un Hot Wheels (o un carrito a escala en blister), "nombre" es el nombre del modelo EXACTAMENTE como está impreso en el blister: mismas palabras, mayúsculas, números, guiones y apóstrofes. NO lo traduzcas aunque esté en inglés. No incluyas la marca "Hot Wheels" ni el nombre de la serie dentro de "nombre".
+2. Si NO es Hot Wheels, "nombre" es el nombre del producto tal como aparece en el empaque, y si no está en español pon en "traduccion_sugerida" cómo se diría en español.
+3. Si no puedes leer el nombre con seguridad (borroso, tapado, cortado, no se ve), pon "requiere_ayuda": true, explica en "motivo_ayuda" en español y en "nombre" tu mejor intento o null.
+4. "idioma_nombre": código ISO 639-1 del idioma del nombre (es, en, ja, fr...). Nombres propios de autos (p. ej. "Nissan Skyline GT-R") cuentan como "en".
+5. Compara con el inventario actual de abajo. Si el producto de la foto es el mismo modelo que uno del inventario (mismo nombre y misma versión: color/serie compatibles), pon su id en "duplicado_id". Si tiene el mismo nombre pero claramente es otra versión (otro color o serie), pon ese id en "posible_variante_id" y deja "duplicado_id" en null.
+
+Inventario actual (id | nombre | serie | color | nº):
+${inventarioParaPrompt()}
+
+Formato exacto:
+{"nombre": string|null, "es_hot_wheels": boolean, "serie": string|null, "numero_coleccion": string|null, "color": string|null, "anio": string|null, "idioma_nombre": string, "traduccion_sugerida": string|null, "confianza": "alta"|"media"|"baja", "requiere_ayuda": boolean, "motivo_ayuda": string|null, "duplicado_id": string|null, "posible_variante_id": string|null}`;
+  try{
+    const r = await S.sample.json(prompt, { images:[n.blob], signal:n.ctl.signal });
+    if(S.nuevo !== n) return;
+    aplicar(r || {});
+  }catch(e){
+    if(S.nuevo !== n || e.code === "cancelled") return;
+    n.status = "error"; n.err = e.code;
+    if(["not_granted","sampling_disabled","images_unavailable","not_declared"].includes(e.code)) { S.imgOk = false; aiNote(); }
+    renderNotices();
+  }
+}
+
+function aplicar(r){
+  const n = S.nuevo; n.ai = r; n.status = "listo";
+  const set = (f, v) => { if(!n.touched[f] && v) F(f).value = v; };
+  const nombre = typeof r.nombre === "string" ? r.nombre.trim() : "";
+  n.help = (!nombre || r.requiere_ayuda || r.confianza === "baja") ? (r.motivo_ayuda || "No pude leer el nombre con seguridad.") : null;
+  const lang = String(r.idioma_nombre || "es").toLowerCase();
+  n.foreign = (!r.es_hot_wheels && nombre && lang !== "es") ? { original:nombre, lang, sug:(r.traduccion_sugerida||"").trim() } : null;
+  // Hot Wheels: nombre tal cual. Otros en otro idioma: el usuario decide.
+  if(!n.foreign) set("fNombre", nombre);
+  set("fSerie", r.serie); set("fNumero", r.numero_coleccion); set("fColor", r.color); set("fAnio", r.anio);
+  n.esHW = !!r.es_hot_wheels;
+  if(r.duplicado_id && byId(r.duplicado_id)){ n.dupId = r.duplicado_id; n.dupSrc = "ai"; }
+  else if(r.posible_variante_id && byId(r.posible_variante_id)) n.varianteId = r.posible_variante_id;
+  if(!n.dupId) checkLocalDup(true);
+  renderChips(); renderNotices();
+  if(n.help || n.foreign) F("fNombre").focus();
+}
+
+function checkLocalDup(silent){
+  const n = S.nuevo; if(!n) return;
+  if(n.dupSrc === "ai" || n.dupDecision) return;
+  const nm = norm(F("fNombre").value), col = norm(F("fColor").value);
+  const hit = nm ? S.productos.find(p => norm(p.nombre) === nm && (!col || !p.color || norm(p.color) === col)) : null;
+  const before = n.dupId;
+  n.dupId = hit ? hit.id : null; n.dupSrc = hit ? "local" : null;
+  if(before !== n.dupId && silent !== true) renderNotices();
+}
+
+function aiNote(){
+  const el = F("addAiNote");
+  if(S.sample && S.imgOk){ el.hidden = true; return; }
+  el.hidden = false;
+  el.textContent = "La lectura automática del nombre no está disponible en esta vista. Puedes capturar el nombre a mano.";
+}
+
+function renderChips(){
+  const n = S.nuevo, box = F("nameChips");
+  if(!n || !n.foreign){ box.hidden = true; box.innerHTML = ""; return; }
+  const opts = [n.foreign.original, n.foreign.sug].filter((v,i,a) => v && a.indexOf(v) === i);
+  box.hidden = false;
+  box.innerHTML = opts.map(o => `<button type="button" class="chip" data-v="${esc(o)}">Usar: ${esc(o)}</button>`).join("");
+  box.onclick = e => { const c = e.target.closest(".chip"); if(!c) return; F("fNombre").value = c.dataset.v; n.touched.fNombre = true; checkLocalDup(); };
+}
+
+function renderNotices(){
+  const n = S.nuevo; if(!n) return;
+  const st = F("addStatus");
+  if(n.status === "leyendo"){ st.hidden = false; st.innerHTML = '<span class="spin"></span> Leyendo el blister y comparando con tu inventario…'; }
+  else if(n.status === "error"){ st.hidden = false; st.innerHTML = `<span>${esc(errTxt(n.err))}</span> <button type="button" class="btn text" id="retryAi">Reintentar</button>`; $("#retryAi").onclick = identificar; }
+  else if(n.status === "manual"){ st.hidden = false; st.textContent = "Escribe el nombre como aparece en el blister."; }
+  else st.hidden = true;
+
+  const out = [];
+  if(n.help){
+    out.push(`<div class="notice warn"><h3>Necesito tu ayuda con el nombre</h3><p>${esc(n.help)}${n.ai && n.ai.nombre ? ` Lo que alcancé a leer: “${esc(n.ai.nombre)}”.` : ""} Escribe cómo quieres registrarlo, o guárdalo sin nombre y lo completas después.</p></div>`);
+  }
+  if(n.foreign){
+    out.push(`<div class="notice warn"><h3>Nombre en otro idioma</h3><p>El empaque dice “${esc(n.foreign.original)}” (${esc(n.foreign.lang.toUpperCase())}). No es un Hot Wheels, así que dime cómo lo registro: usa una opción de abajo o escríbelo tú.</p></div>`);
+  }
+  const d = n.dupId && byId(n.dupId);
+  if(d && n.dupDecision !== "distinto"){
+    out.push(`<div class="notice dup" id="dupBox"><h3>Parece repetido</h3><p>${n.dupSrc === "ai" ? "Claude cree que" : "Por el nombre,"} ya tienes este producto:</p>
+      <div class="match">${thumb(d)}<div><b>${esc(d.nombre)}</b><small>${meta(d) || ""} · existencia ×${cant(d)}</small></div></div>
+      <div class="row"><button type="button" class="btn primary" id="dupSame">Es el mismo: sumar</button><button type="button" class="btn ghost" id="dupDiff">Es otro: guardar aparte</button></div></div>`);
+  } else if(n.varianteId && byId(n.varianteId)){
+    const v = byId(n.varianteId);
+    out.push(`<div class="notice warn"><h3>Mismo nombre, otra versión</h3><p>Ya tienes “${esc(v.nombre)}” (${meta(v) || "sin detalles"}, ×${cant(v)}), pero parece de otro color o serie. Se guardará como producto aparte.</p><div class="row"><button type="button" class="btn ghost" id="varSame">En realidad es el mismo: sumar</button></div></div>`);
+  }
+  F("addNotices").innerHTML = out.join("");
+  const ds = $("#dupSame"), dd = $("#dupDiff"), vs = $("#varSame");
+  if(ds) ds.onclick = () => sumarExistente(n.dupId);
+  if(dd) dd.onclick = () => { n.dupDecision = "distinto"; renderNotices(); };
+  if(vs) vs.onclick = () => sumarExistente(n.varianteId);
+  F("addSave").textContent = (d && n.dupDecision !== "distinto") ? "Guardar como producto nuevo" : "Guardar en inventario";
+}
+
+async function subirFoto(b){
+  if(!S.assets) return null;
+  try{ return (await S.assets.upload(b, {type:"image/jpeg"})).id; }
+  catch(e){ toast("La foto no se pudo guardar (" + (e.code||"error") + "). Se registra sin foto."); return null; }
+}
+
+async function sumarExistente(id){
+  const n = S.nuevo, p = byId(id); if(!n || !p) return;
+  const add = Math.max(1, parseInt(F("fCant").value,10) || 1);
+  lockAdd(true);
+  try{
+    const ref = S.db.doc("productos/" + id);
+    const snap = await ref.get();
+    const actual = snap.exists ? cant(snap.data()) : cant(p);
+    const upd = { cantidad: actual + add, actualizado: Date.now() };
+    if(!p.foto){ const f = await subirFoto(n.blob); if(f) upd.foto = f; }
+    await ref.update(upd);
+    toast(`Sumado. Ahora tienes ${actual + add} de “${p.nombre}”`);
+    resetAdd();
+  }catch(e){ toast("No se pudo actualizar (" + (e.code||"error") + ")"); }
+  finally{ lockAdd(false); }
+}
+
+function lockAdd(on){ ["addSave","addPend","addCancel"].forEach(i => F(i).disabled = on); $$("#addNotices button").forEach(b => b.disabled = on); }
+
+async function guardarNuevo(sinNombre){
+  const n = S.nuevo; if(!n) return;
+  if(!S.db){ toast("La base de datos no está disponible."); return; }
+  const nombre = sinNombre ? "" : F("fNombre").value.trim();
+  if(!sinNombre && !nombre){ toast("Escribe el nombre, o usa “Guardar sin nombre por ahora”."); F("fNombre").focus(); return; }
+  if(n.dupId && byId(n.dupId) && n.dupDecision !== "distinto" && !sinNombre){
+    // pressing the main button with an open duplicate notice = explicit "es otro"
+    n.dupDecision = "distinto";
+  }
+  lockAdd(true); F("addSave").textContent = "Guardando…";
+  try{
+    const foto = await subirFoto(n.blob);
+    const now = Date.now();
+    await S.db.collection("productos").add({
+      nombre, pendiente: !nombre,
+      motivo: !nombre ? (n.help || (n.foreign ? `El nombre está en otro idioma: “${n.foreign.original}”.` : "Sin nombre.")) : null,
+      nombreLeido: n.ai && n.ai.nombre || null,
+      esHotWheels: !!n.esHW,
+      serie: F("fSerie").value.trim(), numero: F("fNumero").value.trim(), color: F("fColor").value.trim(), anio: F("fAnio").value.trim(),
+      cantidad: Math.max(1, parseInt(F("fCant").value,10) || 1),
+      notas: F("fNotas").value.trim(), foto, creado: now, actualizado: now
+    });
+    toast(nombre ? `Guardado: ${nombre}` : "Guardado sin nombre. Complétalo en Inventario › Sin nombre.");
+    resetAdd();
+  }catch(e){
+    toast(e.code === "quota_exceeded" ? "Se llenó el espacio del inventario." : "No se pudo guardar (" + (e.code||"error") + ")");
+  }finally{ lockAdd(false); if(S.nuevo) renderNotices(); }
+}
+F("addForm").addEventListener("submit", e => { e.preventDefault(); guardarNuevo(false); });
+F("addPend").onclick = () => guardarNuevo(true);
+
+/* ---------- SELL FLOW ---------- */
+let aiResults = null;
+function renderVentasRes(){
+  const q = F("venQ").value.trim();
+  const list = aiResults || (q ? search(q) : []);
+  F("venNone").hidden = !(q && !list.length);
+  F("venNoneTxt").textContent = `No encontré “${q}”`;
+  F("venAi").hidden = !S.sample;
+  F("venRes").innerHTML = list.slice(0, 30).map(p => `
+    <button class="item" data-id="${esc(p.id)}">${thumb(p)}<div class="info"><div class="name">${esc(p.nombre || "Sin nombre")}</div><div class="meta">${meta(p) || "&nbsp;"}</div></div><span class="qty ${cant(p)===0?"zero":""}">×${cant(p)}</span></button>`).join("")
+    + (aiResults ? `<p class="lead">Sugerencias de Claude para “${esc(q)}”.</p>` : "");
+}
+F("venQ").addEventListener("input", () => { aiResults = null; renderVentasRes(); });
+F("venRes").addEventListener("click", e => { const it = e.target.closest(".item"); if(it) openVenta(it.dataset.id); });
+F("venAi").onclick = async () => {
+  const q = F("venQ").value.trim(); if(!q || !S.sample) return;
+  const b = F("venAi"); b.disabled = true; b.innerHTML = '<span class="spin"></span> Buscando…';
+  try{
+    const r = await S.sample.json(
+`Busco en un inventario de juguetes (casi todos carritos Hot Wheels) el producto que el usuario nombró en voz o por escrito: "${q}". Puede estar mal escrito, pronunciado en español, abreviado o con apodo.
+Inventario (id | nombre | serie | color | nº):
+${inventarioParaPrompt()}
+Responde SOLO con JSON: {"ids": [hasta 5 ids del inventario, el más probable primero]}. Si nada se parece, {"ids": []}.`, { modelTier:"quick" });
+    aiResults = (r && Array.isArray(r.ids) ? r.ids : []).map(byId).filter(Boolean);
+    if(!aiResults.length){ aiResults = null; toast("Claude tampoco lo encontró en el inventario."); }
+    renderVentasRes();
+  }catch(e){ toast(errTxt(e.code)); }
+  finally{ b.disabled = false; b.textContent = "Buscar con Claude"; }
+};
+
+function openVenta(id){
+  const p = byId(id); if(!p) return;
+  const stock = cant(p);
+  const panel = openSheet(`
+    ${p.foto ? `<img class="big" src="${blob(p.foto)}" alt="">` : `<div class="noimg big" style="height:160px">${CAR_SVG}</div>`}
+    <div><h2>${esc(p.nombre || "Sin nombre")}</h2><div class="kv">${meta(p) ? `<span>${meta(p)}</span>` : ""}<span>Existencia <b>×${stock}</b></span></div></div>
+    <div id="vAsk">
+      <p class="q">¿Es este el producto?</p>
+      <div class="row" style="margin-top:10px"><button class="btn ghost" id="vNo">No, es otro</button><button class="btn primary" id="vYes" ${stock ? "" : "disabled"}>${stock ? "Sí, es este" : "Sin existencias"}</button></div>
+    </div>
+    <div id="vQty" class="view" hidden>
+      <p class="q">¿Cuántos se vendieron?</p>
+      <div class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input id="vCant" type="number" min="1" max="${stock}" value="1" inputmode="numeric" aria-label="Cantidad vendida"><button type="button" data-step="1" aria-label="Más">+</button></div>
+      <p class="lead" id="vLeft">Quedarán ${stock - 1}.</p>
+      <button class="btn primary block" id="vOk">Registrar venta</button>
+      <button class="btn text" id="vBack">Cancelar</button>
+    </div>`);
+  stepper(panel);
+  const upd = () => { let v = parseInt($("#vCant").value,10) || 1; v = Math.min(stock, Math.max(1, v)); $("#vLeft").textContent = `Quedarán ${stock - v}.`; $("#vOk").textContent = `Registrar venta de ${v}`; };
+  $("#vCant").addEventListener("input", upd); upd();
+  $("#vNo").onclick = () => { closeSheet(); F("venQ").focus(); };
+  $("#vBack").onclick = closeSheet;
+  $("#vYes").onclick = () => { $("#vAsk").hidden = true; $("#vQty").hidden = false; $("#vCant").focus(); $("#vCant").select(); };
+  $("#vOk").onclick = async () => {
+    const v = Math.min(stock, Math.max(1, parseInt($("#vCant").value,10) || 1));
+    $("#vOk").disabled = true; $("#vOk").textContent = "Registrando…";
+    try{
+      const ref = S.db.doc("productos/" + p.id);
+      const snap = await ref.get();
+      const actual = snap.exists ? cant(snap.data()) : stock;
+      const vend = Math.min(v, actual);
+      if(!vend){ toast("Ya no hay existencias de este producto."); closeSheet(); return; }
+      await ref.update({ cantidad: actual - vend, actualizado: Date.now() });
+      const vRef = await S.db.collection("ventas").add({ productoId: p.id, nombre: p.nombre || "Sin nombre", cantidad: vend, fecha: Date.now() });
+      closeSheet();
+      F("venQ").value = ""; aiResults = null; renderVentasRes();
+      toast(`Vendidos ${vend} de “${p.nombre}”. Quedan ${actual - vend}.`, "Deshacer", async () => {
+        try{
+          const s2 = await ref.get();
+          if(s2.exists) await ref.update({ cantidad: cant(s2.data()) + vend, actualizado: Date.now() });
+          await vRef.delete();
+          toast("Venta deshecha");
+        }catch(e){ toast("No se pudo deshacer (" + (e.code||"error") + ")"); }
+      });
+    }catch(e){ toast("No se pudo registrar (" + (e.code||"error") + ")"); $("#vOk").disabled = false; upd(); }
+  };
+}
+
+/* ---------- boot ---------- */
+function setSync(t){ $("#sync").textContent = t; }
+function banner(t){ const b = $("#globalBanner"); b.hidden = !t; b.textContent = t || ""; }
+
+(async function boot(){
+  const C = window.claude;
+  if(!C || !C.use){ setSync("Sin conexión"); banner("Abre esta página desde claude.ai para guardar tu inventario."); return; }
+  aiNote();
+  C.use("sample").then(async s => {
+    S.sample = s;
+    if(s){ const l = await s.limits().catch(() => null); S.imgOk = !!(l && l.images); }
+    aiNote(); renderVentasRes();
+  });
+  C.use("assets").then(a => { S.assets = a; });
+  C.use("dictation").then(d => {
+    if(!d) return; S.dict = d; const mic = F("mic"); mic.hidden = false;
+    d.onPartial(({text}) => { F("venQ").value = text; aiResults = null; renderVentasRes(); });
+    d.onFinal(({text}) => { F("venQ").value = text.replace(/[.。]+$/,"").trim(); aiResults = null; renderVentasRes(); });
+    d.onState(({state, reason}) => { mic.classList.toggle("on", state === "listening"); });
+    mic.onclick = () => {
+      if(mic.classList.contains("on")){ d.stop().catch(() => {}); return; }
+      d.start().catch(e => { if(e && e.code === "not_granted") mic.hidden = true; });
+    };
+  });
+
+  const db = await C.use("db");
+  if(!db){ setSync("Sin base de datos"); banner("No pude abrir la base de datos del inventario. Inicia sesión en claude.ai y vuelve a abrir la página."); S.loaded = true; renderAll(); return; }
+  S.db = db;
+  const slow = setTimeout(() => setSync("Sin conexión por ahora…"), 10000);
+  db.collection("productos").onSnapshot(snap => {
+    if(!snap.metadata.fromCache){ clearTimeout(slow); setSync("Guardado en la nube"); S.loaded = true; }
+    S.productos = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+    renderAll();
+  }, e => { clearTimeout(slow); setSync("Error de conexión"); banner("Se perdió la conexión con el inventario (" + e.code + "). Recarga la página."); });
+  db.collection("ventas").orderBy("fecha","desc").limit(60).onSnapshot(snap => {
+    S.ventas = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+    renderVentas();
+  }, () => {});
+})();
+
+renderAll();
+})();
+</script>
