@@ -9,7 +9,7 @@
   --accent:#e8550f; --accent-ink:#ffffff; --accent-soft:#fde6d9;
   --warn-bg:#fdf1dc; --warn-ink:#7a4a05; --warn-line:#efc77d;
   --dup-bg:#fde4e1; --dup-ink:#8a1f15; --dup-line:#f0a59b;
-  --ok:#17804a; --danger:#c0352a;
+  --ok:#17804a; --danger:#c0352a; --blister:#1846c4; --flame:#ffb21a;
   --shadow:0 1px 2px rgba(20,24,28,.06),0 6px 18px rgba(20,24,28,.06);
   --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -20,14 +20,14 @@
   --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2214;
   --warn-bg:#33270f; --warn-ink:#f4c56c; --warn-line:#5e4618;
   --dup-bg:#3a1915; --dup-ink:#ffaaa0; --dup-line:#6b2a22;
-  --ok:#4fd08a; --danger:#ff6b5e; --shadow:0 1px 2px rgba(0,0,0,.4);
+  --ok:#4fd08a; --danger:#ff6b5e; --blister:#2a55d6; --flame:#ffbe3d; --shadow:0 1px 2px rgba(0,0,0,.4);
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111316; --surface:#1b1e23; --surface-2:#22262c; --ink:#eef0f3; --muted:#9aa3ae; --line:#2e333a;
   --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2214;
   --warn-bg:#33270f; --warn-ink:#f4c56c; --warn-line:#5e4618;
   --dup-bg:#3a1915; --dup-ink:#ffaaa0; --dup-line:#6b2a22;
-  --ok:#4fd08a; --danger:#ff6b5e; --shadow:0 1px 2px rgba(0,0,0,.4);
+  --ok:#4fd08a; --danger:#ff6b5e; --blister:#2a55d6; --flame:#ffbe3d; --shadow:0 1px 2px rgba(0,0,0,.4);
   color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -148,7 +148,7 @@ details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
 /* Tabs */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tabs .wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding-block:6px}
-.tab{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:10px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;min-height:54px;justify-content:center}
+.tab{border:0;background:none;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:10px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;min-height:54px;justify-content:center}
 .tab svg{width:24px;height:24px}
 .tab[aria-current="page"]{color:var(--ink);background:var(--surface-2)}
 .tab.add{color:var(--accent-ink);background:var(--accent)}
@@ -162,6 +162,54 @@ details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
 .grab{width:44px;height:5px;border-radius:9px;background:var(--line);align-self:center}
 .kv{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--muted);font-size:14px}
 .kv b{color:var(--ink);font-weight:600}
+
+/* Price */
+.money{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.money span{display:grid;place-items:center;padding:0 12px;background:var(--surface-2);font-family:var(--f-display);font-size:22px;font-weight:700;color:var(--muted)}
+.money input{border:0;flex:1;min-width:0;padding:10px 12px;font-family:var(--f-display);font-size:26px;font-weight:700;background:var(--surface);font-variant-numeric:tabular-nums}
+.price{font-family:var(--f-display);font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.card .cap .price{font-size:18px}
+.item .meta .price{font-size:15px}
+.linkbox{display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.linkbox .row{align-items:center}
+.linkbox input{font-size:13px;min-height:40px;padding:8px 10px}
+
+/* Catalog: each product is a blister card — colored header band with series + collector number, photo inside a bubble, skewed price tag */
+.cat-hero{position:relative;overflow:hidden;border-radius:16px;background:var(--blister);color:#fff;padding:22px 18px 20px;display:flex;flex-direction:column;gap:6px}
+.cat-hero::after{content:"";position:absolute;right:-40px;top:0;bottom:0;width:180px;background:repeating-linear-gradient(115deg,rgba(255,255,255,.14) 0 10px,transparent 10px 22px);pointer-events:none}
+.cat-hero .eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+.cat-hero h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:clamp(34px,10vw,52px);line-height:.95;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance;position:relative;z-index:1}
+.cat-hero h1 em{font-style:italic;color:var(--flame)}
+.cat-hero p{margin:4px 0 0;font-size:15px;opacity:.92;position:relative;z-index:1;max-width:40ch;user-select:text}
+.cat-hero .count{display:inline-flex;gap:6px;align-items:center;align-self:flex-start;margin-top:6px;background:rgba(0,0,0,.25);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;position:relative;z-index:1}
+.cat-tools{display:flex;flex-direction:column;gap:10px}
+.cat-tools .row{align-items:center}
+.cat-tools select{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 10px;font:inherit;flex:1 1 150px}
+.toggle{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);cursor:pointer}
+.toggle input{width:20px;height:20px;accent-color:var(--accent)}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px}
+.bl{position:relative;display:flex;flex-direction:column;background:var(--surface);border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow)}
+.bl-band{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--blister);color:#fff;padding:7px 10px;min-height:34px}
+.bl-band span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bl-num{flex:none;background:var(--flame);color:#1a0d05;font-family:var(--f-display);font-weight:700;font-size:13px;border-radius:999px;padding:1px 8px;font-variant-numeric:tabular-nums}
+.bl-bubble{margin:10px;border-radius:18px;aspect-ratio:1/1;max-width:100%;overflow:hidden;background:repeating-linear-gradient(115deg,var(--surface-2) 0 12px,var(--bg) 12px 24px);border:2px solid var(--line);position:relative}
+.bl-bubble img{width:100%;height:100%;object-fit:cover;display:block}
+.bl-bubble .noimg{width:100%;height:100%}
+.bl-body{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1}
+.bl-name{font-family:var(--f-display);font-weight:700;font-size:20px;line-height:1.02;text-transform:uppercase;overflow-wrap:anywhere;text-wrap:balance}
+.bl-meta{font-size:12px;color:var(--muted)}
+.bl-foot{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.tag-price{display:inline-block;background:var(--flame);color:#1a0d05;font-family:var(--f-display);font-weight:700;font-size:22px;padding:2px 12px 2px 10px;transform:skewX(-10deg);border-radius:4px;font-variant-numeric:tabular-nums}
+.tag-price>b{display:inline-block;transform:skewX(10deg);font-weight:700}
+.tag-price.ask{background:var(--surface-2);color:var(--muted);font-size:15px}
+.bl-stock{font-size:12px;font-weight:600;color:var(--ok)}
+.bl.out .bl-bubble img{filter:grayscale(1);opacity:.55}
+.bl-stamp{position:absolute;top:44%;left:50%;transform:translate(-50%,-50%) rotate(-12deg);border:3px solid var(--danger);color:var(--danger);background:var(--surface);font-family:var(--f-display);font-weight:700;font-size:22px;padding:2px 12px;border-radius:6px;text-transform:uppercase;letter-spacing:.06em}
+.cat-foot{text-align:center;color:var(--muted);font-size:13px;padding-top:8px}
+.owner-bar{display:flex;gap:10px;flex-wrap:wrap}
+.owner-bar .btn{flex:1 1 150px;min-height:44px;font-size:15px}
+body.visitor .tabs,body.visitor .top,body.visitor .owner-only{display:none!important}
+body.visitor::before{background:var(--bg)}
 
 /* Toast */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px);box-shadow:var(--shadow);font-weight:500}
@@ -186,13 +234,20 @@ details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
   <section id="v-inventario" class="view">
     <div>
       <h2>Mi inventario</h2>
-      <p class="lead" id="invLead">Toca un carrito para editar nombre, cantidad o notas.</p>
+      <p class="lead" id="invLead">Toca un carrito para editar nombre, precio, cantidad o notas.</p>
+    </div>
+    <div class="linkbox">
+      <b>Catálogo para tus clientes</b>
+      <span class="lead" style="font-size:14px">Muestra todos los productos con existencia y su precio. Comparte esta liga:</span>
+      <input id="catLink" class="inp" readonly value="https://claude.ai/artifact/Unp4nxVGF8JB7cvdh1gMek#catalogo" aria-label="Liga del catálogo">
+      <div class="row"><a class="btn primary" href="#catalogo">Ver catálogo</a><button class="btn ghost" id="copyCat" type="button">Copiar liga</button></div>
     </div>
     <div class="search"><input id="invQ" class="inp" type="search" placeholder="Filtrar por nombre, serie o color" autocomplete="off"></div>
     <div class="chips" id="invFiltros">
       <button class="chip on" data-f="todos">Todos</button>
       <button class="chip" data-f="pendientes">Sin nombre</button>
       <button class="chip" data-f="repetidos">Con repetidos</button>
+      <button class="chip" data-f="sinprecio">Sin precio</button>
       <button class="chip" data-f="agotados">Agotados</button>
     </div>
     <div id="invCards" class="cards"></div>
@@ -227,6 +282,7 @@ details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
       <div id="addNotices" class="view"></div>
       <label class="field"><span>Nombre</span><input id="fNombre" class="inp big" placeholder="Nombre como aparece en el blister"></label>
       <div id="nameChips" class="chips" hidden></div>
+      <label class="field"><span>Precio de venta por pieza</span><div class="money"><span>$</span><input id="fPrecio" inputmode="decimal" placeholder="0.00" aria-label="Precio en pesos"></div></label>
       <div class="grid2">
         <label class="field"><span>Serie</span><input id="fSerie" class="inp" placeholder="HW Exotics"></label>
         <label class="field"><span>Nº colección</span><input id="fNumero" class="inp" placeholder="45/250"></label>
@@ -236,7 +292,7 @@ details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
       <div class="field"><span>Cantidad</span>
         <div class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input id="fCant" type="number" min="1" value="1" inputmode="numeric" aria-label="Cantidad"><button type="button" data-step="1" aria-label="Más">+</button></div>
       </div>
-      <label class="field"><span>Notas</span><textarea id="fNotas" class="inp" placeholder="Precio, estado del blister, ubicación…"></textarea></label>
+      <label class="field"><span>Notas</span><textarea id="fNotas" class="inp" placeholder="Estado del blister, ubicación, costo… (no se muestran en el catálogo)"></textarea></label>
       <button type="submit" class="btn primary block" id="addSave">Guardar en inventario</button>
       <div class="row">
         <button type="button" class="btn ghost" id="addPend">Guardar sin nombre por ahora</button>
@@ -266,6 +322,36 @@ details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
       <div id="salesList"></div>
     </details>
   </section>
+  <!-- CATÁLOGO -->
+  <section id="v-catalogo" class="view" hidden>
+    <div class="owner-bar owner-only">
+      <a class="btn ghost" href="#inventario">← Volver al inventario</a>
+      <button class="btn ghost" id="catEdit" type="button">Editar portada</button>
+      <button class="btn primary" id="copyCat2" type="button">Copiar liga</button>
+    </div>
+    <header class="cat-hero">
+      <span class="eyebrow">Catálogo · Escala 1:64</span>
+      <h1 id="catTitle">Colección <em>a la venta</em></h1>
+      <p id="catContact" hidden></p>
+      <span class="count" id="catCount">Cargando…</span>
+    </header>
+    <div class="cat-tools">
+      <input id="catQ" class="inp" type="search" placeholder="Buscar modelo, serie o color" autocomplete="off" aria-label="Buscar en el catálogo">
+      <div class="chips" id="catSeries"></div>
+      <div class="row">
+        <select id="catSort" aria-label="Ordenar">
+          <option value="recientes">Más recientes</option>
+          <option value="precioAsc">Precio: menor a mayor</option>
+          <option value="precioDesc">Precio: mayor a menor</option>
+          <option value="nombre">Nombre A–Z</option>
+        </select>
+        <label class="toggle"><input type="checkbox" id="catOut"> Mostrar agotados</label>
+      </div>
+    </div>
+    <div id="catGrid" class="cat-grid"></div>
+    <div id="catEmpty" class="empty" hidden><b>Aún no hay productos en el catálogo</b><span>Aparecen aquí los productos con nombre y existencia.</span></div>
+    <p class="cat-foot">Precios en pesos mexicanos (MXN). Existencias actualizadas al momento.</p>
+  </section>
 </main>
 
 <nav class="tabs" aria-label="Secciones">
@@ -289,7 +375,8 @@ const CAR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const S = {
   db:null, assets:null, sample:null, imgOk:false, dict:null,
   productos:[], ventas:[], loaded:false,
-  filtro:"todos", nuevo:null
+  filtro:"todos", nuevo:null, visitor:false, owner:true,
+  cfg:{ titulo:"", contacto:"" }, catSerie:""
 };
 
 /* ---------- utils ---------- */
@@ -299,6 +386,10 @@ const blob = id => id ? "/_blob/" + id : "";
 const thumb = (p, cls="") => p && p.foto ? `<img class="${cls}" src="${blob(p.foto)}" alt="" loading="lazy">` : `<div class="noimg ${cls}">${CAR_SVG}</div>`;
 const byId = id => S.productos.find(p => p.id === id);
 const cant = p => Math.max(0, Number(p && p.cantidad) || 0);
+const MXN = new Intl.NumberFormat("es-MX",{style:"currency",currency:"MXN",minimumFractionDigits:0,maximumFractionDigits:2});
+const precioDe = p => { const v = Number(p && p.precio); return isFinite(v) && v > 0 ? v : null; };
+const fmtPrecio = v => v == null ? "" : MXN.format(v);
+function parsePrecio(t){ const c = String(t ?? "").replace(/[^0-9.,]/g,"").replace(/,(?=\d{3}\b)/g,"").replace(",","."); const v = parseFloat(c); return isFinite(v) && v > 0 ? Math.round(v*100)/100 : null; }
 const meta = p => [p.serie, p.numero, p.color, p.anio].filter(Boolean).map(esc).join(" · ");
 const errTxt = c => ({
   not_granted:"No diste permiso para usar Claude en esta página.",
@@ -350,9 +441,10 @@ function stepper(root){
 stepper(document);
 
 /* ---------- routing ---------- */
-const VIEWS = ["inventario","agregar","vender"];
+const VIEWS = ["inventario","agregar","vender","catalogo"];
 function route(){
-  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "inventario";
+  let v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "inventario";
+  if(S.visitor) v = "catalogo";
   VIEWS.forEach(x => $("#v-"+x).hidden = x !== v);
   $$(".tab").forEach(t => { if(t.dataset.tab === v) t.setAttribute("aria-current","page"); else t.removeAttribute("aria-current"); });
   if(v === "vender") setTimeout(() => $("#venQ").focus(), 50);
@@ -372,13 +464,14 @@ function renderInventario(){
   if(S.filtro === "pendientes") list = list.filter(p => p.pendiente || !p.nombre);
   if(S.filtro === "repetidos") list = list.filter(p => cant(p) > 1);
   if(S.filtro === "agotados") list = list.filter(p => cant(p) === 0);
+  if(S.filtro === "sinprecio") list = list.filter(p => precioDe(p) == null);
   const pend = S.productos.filter(p => p.pendiente || !p.nombre).length;
-  $("#invLead").textContent = pend ? `${pend} sin nombre. Toca cada uno para escribir cómo registrarlo.` : "Toca un carrito para editar nombre, cantidad o notas.";
+  $("#invLead").textContent = pend ? `${pend} sin nombre. Toca cada uno para escribir cómo registrarlo.` : "Toca un carrito para editar nombre, precio, cantidad o notas.";
   $("#invEmpty").hidden = !(S.loaded && S.productos.length === 0);
   $("#invCards").innerHTML = list.map(p => `
     <button class="card" data-id="${esc(p.id)}">
       <div class="ph">${thumb(p)}${(p.pendiente||!p.nombre) ? '<span class="tag">Sin nombre</span>' : ""}<span class="badge ${cant(p)===0?"zero":""}">×${cant(p)}</span></div>
-      <div class="cap"><b>${esc(p.nombre || "Sin nombre")}</b><small>${meta(p) || "&nbsp;"}</small></div>
+      <div class="cap"><b>${esc(p.nombre || "Sin nombre")}</b><small>${meta(p) || "&nbsp;"}</small>${precioDe(p) != null ? `<span class="price">${fmtPrecio(precioDe(p))}</span>` : '<small>Sin precio</small>'}</div>
     </button>`).join("") || (S.productos.length ? '<p class="lead">Nada coincide con el filtro.</p>' : "");
 }
 $("#invCards").addEventListener("click", e => { const c = e.target.closest(".card"); if(c) openEdit(c.dataset.id); });
@@ -390,9 +483,9 @@ $("#invFiltros").addEventListener("click", e => {
 
 function renderVentas(){
   const fmt = new Intl.DateTimeFormat("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
-  $("#salesList").innerHTML = S.ventas.length ? S.ventas.map(v => `<div class="sale"><span><b>${Number(v.cantidad)||0}×</b> ${esc(v.nombre||"Producto")}</span><time>${fmt.format(new Date(v.fecha||0))}</time></div>`).join("") : '<p class="lead" style="padding-bottom:12px">Aún no hay ventas registradas.</p>';
+  $("#salesList").innerHTML = S.ventas.length ? S.ventas.map(v => `<div class="sale"><span><b>${Number(v.cantidad)||0}×</b> ${esc(v.nombre||"Producto")}${v.total ? ` · <b>${fmtPrecio(v.total)}</b>` : ""}</span><time>${fmt.format(new Date(v.fecha||0))}</time></div>`).join("") : '<p class="lead" style="padding-bottom:12px">Aún no hay ventas registradas.</p>';
 }
-function renderAll(){ renderStats(); renderInventario(); renderVentasRes(); renderVentas(); if(S.nuevo) renderNotices(); }
+function renderAll(){ renderStats(); renderInventario(); renderVentasRes(); renderVentas(); renderCatalogo(); if(S.nuevo) renderNotices(); }
 
 /* ---------- edit sheet ---------- */
 function openEdit(id){
@@ -401,6 +494,7 @@ function openEdit(id){
     ${p.foto ? `<img class="big" src="${blob(p.foto)}" alt="">` : ""}
     ${(p.pendiente||!p.nombre) ? `<div class="notice warn"><h3>Falta el nombre</h3><p>${esc(p.motivo || "No pude leer el nombre con seguridad.")} Escribe cómo quieres registrarlo.</p></div>` : ""}
     <label class="field"><span>Nombre</span><input id="eNombre" class="inp big" value="${esc(p.nombre)}"></label>
+    <label class="field"><span>Precio de venta por pieza</span><div class="money"><span>$</span><input id="ePrecio" inputmode="decimal" placeholder="0.00" value="${precioDe(p) ?? ""}" aria-label="Precio en pesos"></div></label>
     <div class="grid2">
       <label class="field"><span>Serie</span><input id="eSerie" class="inp" value="${esc(p.serie)}"></label>
       <label class="field"><span>Nº colección</span><input id="eNumero" class="inp" value="${esc(p.numero)}"></label>
@@ -426,7 +520,7 @@ function openEdit(id){
   };
   $("#eSave").onclick = async () => {
     const nombre = $("#eNombre").value.trim();
-    const data = { nombre, pendiente: !nombre, serie: $("#eSerie").value.trim(), numero: $("#eNumero").value.trim(), color: $("#eColor").value.trim(), anio: $("#eAnio").value.trim(), cantidad: Math.max(0, parseInt($("#eCant").value,10) || 0), notas: $("#eNotas").value.trim(), actualizado: Date.now() };
+    const data = { nombre, pendiente: !nombre, serie: $("#eSerie").value.trim(), numero: $("#eNumero").value.trim(), color: $("#eColor").value.trim(), anio: $("#eAnio").value.trim(), cantidad: Math.max(0, parseInt($("#eCant").value,10) || 0), precio: parsePrecio($("#ePrecio").value), notas: $("#eNotas").value.trim(), actualizado: Date.now() };
     const otro = nombre && S.productos.find(x => x.id !== p.id && norm(x.nombre) === norm(nombre) && norm(x.color) === norm(data.color));
     try{
       await S.db.doc("productos/" + p.id).update(data);
@@ -449,7 +543,7 @@ async function compress(file){
   return await new Promise(ok => c.toBlob(ok, "image/jpeg", 0.85));
 }
 const F = id => $("#" + id);
-const FIELDS = ["fNombre","fSerie","fNumero","fColor","fAnio","fNotas"];
+const FIELDS = ["fNombre","fPrecio","fSerie","fNumero","fColor","fAnio","fNotas"];
 
 async function onPick(e){
   const file = e.target.files && e.target.files[0]; e.target.value = "";
@@ -608,6 +702,7 @@ async function sumarExistente(id){
     const snap = await ref.get();
     const actual = snap.exists ? cant(snap.data()) : cant(p);
     const upd = { cantidad: actual + add, actualizado: Date.now() };
+    const pr = parsePrecio(F("fPrecio").value); if(pr != null) upd.precio = pr;
     if(!p.foto){ const f = await subirFoto(n.blob); if(f) upd.foto = f; }
     await ref.update(upd);
     toast(`Sumado. Ahora tienes ${actual + add} de “${p.nombre}”`);
@@ -638,9 +733,11 @@ async function guardarNuevo(sinNombre){
       esHotWheels: !!n.esHW,
       serie: F("fSerie").value.trim(), numero: F("fNumero").value.trim(), color: F("fColor").value.trim(), anio: F("fAnio").value.trim(),
       cantidad: Math.max(1, parseInt(F("fCant").value,10) || 1),
+      precio: parsePrecio(F("fPrecio").value),
       notas: F("fNotas").value.trim(), foto, creado: now, actualizado: now
     });
-    toast(nombre ? `Guardado: ${nombre}` : "Guardado sin nombre. Complétalo en Inventario › Sin nombre.");
+    const prG = parsePrecio(F("fPrecio").value);
+    toast(nombre ? `Guardado: ${nombre}${prG != null ? " · " + fmtPrecio(prG) : " (sin precio)"}` : "Guardado sin nombre. Complétalo en Inventario › Sin nombre.");
     resetAdd();
   }catch(e){
     toast(e.code === "quota_exceeded" ? "Se llenó el espacio del inventario." : "No se pudo guardar (" + (e.code||"error") + ")");
@@ -658,7 +755,7 @@ function renderVentasRes(){
   F("venNoneTxt").textContent = `No encontré “${q}”`;
   F("venAi").hidden = !S.sample;
   F("venRes").innerHTML = list.slice(0, 30).map(p => `
-    <button class="item" data-id="${esc(p.id)}">${thumb(p)}<div class="info"><div class="name">${esc(p.nombre || "Sin nombre")}</div><div class="meta">${meta(p) || "&nbsp;"}</div></div><span class="qty ${cant(p)===0?"zero":""}">×${cant(p)}</span></button>`).join("")
+    <button class="item" data-id="${esc(p.id)}">${thumb(p)}<div class="info"><div class="name">${esc(p.nombre || "Sin nombre")}</div><div class="meta">${precioDe(p) != null ? `<span class="price">${fmtPrecio(precioDe(p))}</span> · ` : ""}${meta(p) || "&nbsp;"}</div></div><span class="qty ${cant(p)===0?"zero":""}">×${cant(p)}</span></button>`).join("")
     + (aiResults ? `<p class="lead">Sugerencias de Claude para “${esc(q)}”.</p>` : "");
 }
 F("venQ").addEventListener("input", () => { aiResults = null; renderVentasRes(); });
@@ -684,7 +781,7 @@ function openVenta(id){
   const stock = cant(p);
   const panel = openSheet(`
     ${p.foto ? `<img class="big" src="${blob(p.foto)}" alt="">` : `<div class="noimg big" style="height:160px">${CAR_SVG}</div>`}
-    <div><h2>${esc(p.nombre || "Sin nombre")}</h2><div class="kv">${meta(p) ? `<span>${meta(p)}</span>` : ""}<span>Existencia <b>×${stock}</b></span></div></div>
+    <div><h2>${esc(p.nombre || "Sin nombre")}</h2><div class="kv">${precioDe(p) != null ? `<span>Precio <b class="price">${fmtPrecio(precioDe(p))}</b></span>` : "<span>Sin precio</span>"}${meta(p) ? `<span>${meta(p)}</span>` : ""}<span>Existencia <b>×${stock}</b></span></div></div>
     <div id="vAsk">
       <p class="q">¿Es este el producto?</p>
       <div class="row" style="margin-top:10px"><button class="btn ghost" id="vNo">No, es otro</button><button class="btn primary" id="vYes" ${stock ? "" : "disabled"}>${stock ? "Sí, es este" : "Sin existencias"}</button></div>
@@ -697,7 +794,7 @@ function openVenta(id){
       <button class="btn text" id="vBack">Cancelar</button>
     </div>`);
   stepper(panel);
-  const upd = () => { let v = parseInt($("#vCant").value,10) || 1; v = Math.min(stock, Math.max(1, v)); $("#vLeft").textContent = `Quedarán ${stock - v}.`; $("#vOk").textContent = `Registrar venta de ${v}`; };
+  const upd = () => { let v = parseInt($("#vCant").value,10) || 1; v = Math.min(stock, Math.max(1, v)); $("#vLeft").textContent = `Quedarán ${stock - v}.` + (precioDe(p) != null ? ` Total: ${fmtPrecio(precioDe(p) * v)}.` : ""); $("#vOk").textContent = `Registrar venta de ${v}`; };
   $("#vCant").addEventListener("input", upd); upd();
   $("#vNo").onclick = () => { closeSheet(); F("venQ").focus(); };
   $("#vBack").onclick = closeSheet;
@@ -712,10 +809,10 @@ function openVenta(id){
       const vend = Math.min(v, actual);
       if(!vend){ toast("Ya no hay existencias de este producto."); closeSheet(); return; }
       await ref.update({ cantidad: actual - vend, actualizado: Date.now() });
-      const vRef = await S.db.collection("ventas").add({ productoId: p.id, nombre: p.nombre || "Sin nombre", cantidad: vend, fecha: Date.now() });
+      const vRef = await S.db.collection("ventas").add({ productoId: p.id, nombre: p.nombre || "Sin nombre", cantidad: vend, precio: precioDe(p), total: precioDe(p) != null ? Math.round(precioDe(p) * vend * 100) / 100 : null, fecha: Date.now() });
       closeSheet();
       F("venQ").value = ""; aiResults = null; renderVentasRes();
-      toast(`Vendidos ${vend} de “${p.nombre}”. Quedan ${actual - vend}.`, "Deshacer", async () => {
+      toast(`Vendidos ${vend} de “${p.nombre}”${precioDe(p) != null ? " por " + fmtPrecio(precioDe(p) * vend) : ""}. Quedan ${actual - vend}.`, "Deshacer", async () => {
         try{
           const s2 = await ref.get();
           if(s2.exists) await ref.update({ cantidad: cant(s2.data()) + vend, actualizado: Date.now() });
@@ -727,6 +824,73 @@ function openVenta(id){
   };
 }
 
+/* ---------- CATÁLOGO ---------- */
+function catalogoBase(){ return S.productos.filter(p => p.nombre && !p.pendiente); }
+function renderCatalogo(){
+  const titulo = (S.cfg.titulo || "").trim();
+  const h = F("catTitle");
+  if(titulo) h.textContent = titulo; else h.innerHTML = "Colección <em>a la venta</em>";
+  const c = F("catContact"); c.hidden = !S.cfg.contacto; c.textContent = S.cfg.contacto || "";
+  const base = catalogoBase();
+  // series chips
+  const series = [...new Set(base.map(p => (p.serie || "").trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b,"es"));
+  if(S.catSerie && !series.includes(S.catSerie)) S.catSerie = "";
+  F("catSeries").innerHTML = series.length > 1 ? ['<button class="chip' + (S.catSerie ? "" : " on") + '" data-s="">Todas las series</button>'].concat(series.map(x => `<button class="chip${S.catSerie === x ? " on" : ""}" data-s="${esc(x)}">${esc(x)}</button>`)).join("") : "";
+  const q = F("catQ").value.trim();
+  let list = q ? search(q, base) : base.slice();
+  if(S.catSerie) list = list.filter(p => (p.serie || "").trim() === S.catSerie);
+  if(!F("catOut").checked) list = list.filter(p => cant(p) > 0);
+  const sort = F("catSort").value;
+  const pv = p => precioDe(p) ?? Infinity;
+  if(sort === "precioAsc") list.sort((a,b) => pv(a) - pv(b));
+  else if(sort === "precioDesc") list.sort((a,b) => (precioDe(b) ?? -1) - (precioDe(a) ?? -1));
+  else if(sort === "nombre") list.sort((a,b) => norm(a.nombre).localeCompare(norm(b.nombre)));
+  else if(!q) list.sort((a,b) => (b.creado||0) - (a.creado||0));
+  const disp = base.filter(p => cant(p) > 0);
+  F("catCount").textContent = S.loaded || base.length ? `${disp.length} modelo${disp.length === 1 ? "" : "s"} disponible${disp.length === 1 ? "" : "s"}` : "Cargando…";
+  F("catEmpty").hidden = !(S.loaded && base.length === 0);
+  F("catGrid").innerHTML = list.map(p => {
+    const st = cant(p), pr = precioDe(p);
+    return `<article class="bl${st ? "" : " out"}">
+      <div class="bl-band"><span>${esc(p.serie || (p.esHotWheels === false ? "Coleccionable" : "Hot Wheels"))}</span>${p.numero ? `<span class="bl-num">${esc(p.numero)}</span>` : ""}</div>
+      <div class="bl-bubble">${thumb(p)}${st ? "" : '<span class="bl-stamp">Agotado</span>'}</div>
+      <div class="bl-body">
+        <div class="bl-name">${esc(p.nombre)}</div>
+        ${[p.color, p.anio].filter(Boolean).length ? `<div class="bl-meta">${[p.color, p.anio].filter(Boolean).map(esc).join(" · ")}</div>` : ""}
+        <div class="bl-foot">${pr != null ? `<span class="tag-price"><b>${fmtPrecio(pr)}</b></span>` : '<span class="tag-price ask"><b>Precio a consultar</b></span>'}${st ? `<span class="bl-stock">${st === 1 ? "Última pieza" : st + " disponibles"}</span>` : ""}</div>
+      </div>
+    </article>`;
+  }).join("") || (base.length ? '<p class="lead">Nada coincide con la búsqueda.</p>' : "");
+}
+F("catQ").addEventListener("input", renderCatalogo);
+F("catSort").addEventListener("change", renderCatalogo);
+F("catOut").addEventListener("change", renderCatalogo);
+F("catSeries").addEventListener("click", e => { const c = e.target.closest(".chip"); if(!c) return; S.catSerie = c.dataset.s; renderCatalogo(); });
+
+function copiarLiga(){
+  const inp = F("catLink"), url = inp.value;
+  const ok = () => toast("Liga copiada. Para que otros la abran, compártela desde el menú Compartir de la página.");
+  try{
+    navigator.clipboard.writeText(url).then(ok, () => { location.hash = "inventario"; inp.focus(); inp.select(); toast("Selecciona y copia la liga del recuadro."); });
+  }catch(_){ inp.focus(); inp.select(); }
+}
+F("copyCat").onclick = copiarLiga;
+F("copyCat2").onclick = copiarLiga;
+F("catEdit").onclick = () => {
+  openSheet(`<h2>Portada del catálogo</h2>
+    <label class="field"><span>Título</span><input id="cTitulo" class="inp big" placeholder="Colección a la venta" value="${esc(S.cfg.titulo)}"></label>
+    <label class="field"><span>Contacto o mensaje</span><textarea id="cContacto" class="inp" placeholder="Pedidos por WhatsApp al 55 1234 5678 · Entregas en …">${esc(S.cfg.contacto)}</textarea></label>
+    <button class="btn primary block" id="cSave">Guardar portada</button>
+    <button class="btn text" id="cClose">Cerrar</button>`);
+  $("#cClose").onclick = closeSheet;
+  $("#cSave").onclick = async () => {
+    try{
+      await S.db.doc("config/catalogo").set({ titulo: $("#cTitulo").value.trim(), contacto: $("#cContacto").value.trim(), actualizado: Date.now() });
+      closeSheet(); toast("Portada guardada");
+    }catch(e){ toast("No se pudo guardar (" + (e.code||"error") + ")"); }
+  };
+};
+
 /* ---------- boot ---------- */
 function setSync(t){ $("#sync").textContent = t; }
 function banner(t){ const b = $("#globalBanner"); b.hidden = !t; b.textContent = t || ""; }
@@ -735,13 +899,16 @@ function banner(t){ const b = $("#globalBanner"); b.hidden = !t; b.textContent =
   const C = window.claude;
   if(!C || !C.use){ setSync("Sin conexión"); banner("Abre esta página desde claude.ai para guardar tu inventario."); return; }
   aiNote();
-  C.use("sample").then(async s => {
+  const user = await C.use("user");
+  if(user){ try{ S.owner = await user.isOwner(); }catch(_){ S.owner = true; } }
+  if(!S.owner){ S.visitor = true; document.body.classList.add("visitor"); route(); }
+  if(!S.visitor) C.use("sample").then(async s => {
     S.sample = s;
     if(s){ const l = await s.limits().catch(() => null); S.imgOk = !!(l && l.images); }
     aiNote(); renderVentasRes();
   });
-  C.use("assets").then(a => { S.assets = a; });
-  C.use("dictation").then(d => {
+  if(!S.visitor) C.use("assets").then(a => { S.assets = a; });
+  if(!S.visitor) C.use("dictation").then(d => {
     if(!d) return; S.dict = d; const mic = F("mic"); mic.hidden = false;
     d.onPartial(({text}) => { F("venQ").value = text; aiResults = null; renderVentasRes(); });
     d.onFinal(({text}) => { F("venQ").value = text.replace(/[.。]+$/,"").trim(); aiResults = null; renderVentasRes(); });
@@ -761,7 +928,8 @@ function banner(t){ const b = $("#globalBanner"); b.hidden = !t; b.textContent =
     S.productos = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
     renderAll();
   }, e => { clearTimeout(slow); setSync("Error de conexión"); banner("Se perdió la conexión con el inventario (" + e.code + "). Recarga la página."); });
-  db.collection("ventas").orderBy("fecha","desc").limit(60).onSnapshot(snap => {
+  db.doc("config/catalogo").onSnapshot(snap => { S.cfg = Object.assign({ titulo:"", contacto:"" }, snap.exists ? snap.data() : {}); renderCatalogo(); }, () => {});
+  if(!S.visitor) db.collection("ventas").orderBy("fecha","desc").limit(60).onSnapshot(snap => {
     S.ventas = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
     renderVentas();
   }, () => {});

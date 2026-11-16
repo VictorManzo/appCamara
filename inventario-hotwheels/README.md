@@ -10,7 +10,11 @@ App móvil (página web) para llevar el inventario de carritos con foto.
   y lo completas después desde el filtro *Sin nombre*).
 - **Vender**: escribes o dictas el nombre, confirmas que el carrito de la pantalla es el
   correcto, indicas cuántos se vendieron y se restan del inventario (con opción de deshacer).
-- **Inventario**: cuadrícula con foto y existencia; filtros Sin nombre / Con repetidos / Agotados.
+- **Precio**: se captura después de la foto (y se edita desde Inventario); las ventas guardan el total.
+- **Inventario**: cuadrícula con foto, precio y existencia; filtros Sin nombre / Con repetidos / Sin precio / Agotados.
+- **Catálogo** (`#catalogo`): página para clientes con diseño de blister, precio, existencias,
+  búsqueda, filtro por serie y orden por precio. Quien no es dueño solo ve el catálogo y no puede
+  modificar datos.
 
 Se ejecuta publicada en claude.ai (usa la base de datos, el almacén de fotos y la lectura
 de imágenes con Claude de la plataforma), así que `index.html` es el código fuente de la
