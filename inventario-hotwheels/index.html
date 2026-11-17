@@ -694,7 +694,7 @@ F("addCancel").onclick = resetAdd;
 FIELDS.forEach(f => F(f).addEventListener("input", () => { if(S.nuevo) S.nuevo.touched[f] = true; }));
 let dupT;
 F("fNombre").addEventListener("input", () => { clearTimeout(dupT); dupT = setTimeout(checkLocalDup, 300); });
-F("fColor").addEventListener("input", () => { clearTimeout(dupT); dupT = setTimeout(checkLocalDup, 300); });
+["fColor","fNumero","fSerie"].forEach(f => F(f).addEventListener("input", () => { clearTimeout(dupT); dupT = setTimeout(checkLocalDup, 300); }));
 
 function resetAdd(){
   if(S.nuevo && S.nuevo.ctl) S.nuevo.ctl.abort();
@@ -709,10 +709,12 @@ function inventarioParaPrompt(){
     .map(p => `${p.id} | ${p.nombre} | ${p.serie||""} | ${p.color||""} | ${p.numero||""}`).join("\n") || "(vacío)";
 }
 
-async function identificar(){
-  const n = S.nuevo;
+async function identificar(detalle){
+  const n = S.nuevo; detalle = detalle === true;
   if(!S.sample || !S.imgOk){ n.status = "manual"; renderNotices(); F("fNombre").focus(); return; }
-  n.status = "leyendo"; n.ctl = new AbortController(); renderNotices();
+  n.status = "leyendo"; n.parcial = ""; n.ctl = new AbortController(); renderNotices();
+  if(!n.aiImg){ try{ n.aiImg = await achicar(n.orig, 1100); }catch(_){ n.aiImg = n.orig; } }
+  if(S.nuevo !== n) return;
   const prompt =
 `Eres el asistente de un inventario de juguetes para vender. La mayoría son carritos Hot Wheels en blister. Mira la foto y responde SOLO con un objeto JSON.
 
@@ -721,16 +723,19 @@ Reglas:
 2. Si NO es Hot Wheels, "nombre" es el nombre del producto tal como aparece en el empaque, y si no está en español pon en "traduccion_sugerida" cómo se diría en español.
 3. Si no puedes leer el nombre con seguridad (borroso, tapado, cortado, no se ve), pon "requiere_ayuda": true, explica en "motivo_ayuda" en español y en "nombre" tu mejor intento o null.
 4. "idioma_nombre": código ISO 639-1 del idioma del nombre (es, en, ja, fr...). Nombres propios de autos (p. ej. "Nissan Skyline GT-R") cuentan como "en".
-5. Compara con el inventario actual de abajo. Si el producto de la foto es el mismo modelo que uno del inventario (mismo nombre y misma versión: color/serie compatibles), pon su id en "duplicado_id". Si tiene el mismo nombre pero claramente es otra versión (otro color o serie), pon ese id en "posible_variante_id" y deja "duplicado_id" en null.
-6. "recorte": el rectángulo que encierra SOLO el producto (el blister/empaque completo, o el carrito si está suelto), sin el fondo, la mesa ni otros objetos. Da fracciones de 0 a 1 del ancho y alto de la foto: x,y = esquina superior izquierda; w,h = ancho y alto. No cortes ninguna parte del producto. Si el producto ya llena la foto, usa {"x":0,"y":0,"w":1,"h":1}.
+5. "recorte": el rectángulo que encierra SOLO el producto (el blister/empaque completo, o el carrito si está suelto), sin el fondo, la mesa ni otros objetos. Da fracciones de 0 a 1 del ancho y alto de la foto: x,y = esquina superior izquierda; w,h = ancho y alto. No cortes ninguna parte del producto. Si el producto ya llena la foto, usa {"x":0,"y":0,"w":1,"h":1}.
 
-Inventario actual (id | nombre | serie | color | nº):
-${inventarioParaPrompt()}
-
+Sé breve: solo el JSON, sin explicaciones.
 Formato exacto:
-{"nombre": string|null, "es_hot_wheels": boolean, "serie": string|null, "numero_coleccion": string|null, "color": string|null, "anio": string|null, "idioma_nombre": string, "traduccion_sugerida": string|null, "confianza": "alta"|"media"|"baja", "requiere_ayuda": boolean, "motivo_ayuda": string|null, "duplicado_id": string|null, "posible_variante_id": string|null, "recorte": {"x": number, "y": number, "w": number, "h": number}}`;
+{"nombre": string|null, "es_hot_wheels": boolean, "serie": string|null, "numero_coleccion": string|null, "color": string|null, "anio": string|null, "idioma_nombre": string, "traduccion_sugerida": string|null, "confianza": "alta"|"media"|"baja", "requiere_ayuda": boolean, "motivo_ayuda": string|null, "recorte": {"x": number, "y": number, "w": number, "h": number}}`;
   try{
-    const r = await S.sample.json(prompt, { images:[n.orig], signal:n.ctl.signal });
+    const r = await S.sample.json(prompt, {
+      images:[n.aiImg], signal:n.ctl.signal, modelTier: detalle ? "default" : "quick",
+      onText: ({text}) => {
+        const m = text.match(/"nombre"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        if(m && m[1] !== n.parcial && S.nuevo === n){ n.parcial = m[1]; renderNotices(); }
+      }
+    });
     if(S.nuevo !== n) return;
     aplicar(r || {});
   }catch(e){
@@ -754,21 +759,31 @@ function aplicar(r){
   n.esHW = !!r.es_hot_wheels;
   const rc = cleanCrop(r.recorte, 0.02);
   if(rc && (rc.w < 0.97 || rc.h < 0.97)) aplicarRecorte(n, rc, "auto");
-  if(r.duplicado_id && byId(r.duplicado_id)){ n.dupId = r.duplicado_id; n.dupSrc = "ai"; }
-  else if(r.posible_variante_id && byId(r.posible_variante_id)) n.varianteId = r.posible_variante_id;
-  if(!n.dupId) checkLocalDup(true);
+  n.dupId = null; n.varianteId = null; n.dupDecision = null;
+  checkLocalDup(true);
   renderChips(); renderNotices();
   if(n.help || n.foreign) F("fNombre").focus();
 }
 
 function checkLocalDup(silent){
-  const n = S.nuevo; if(!n) return;
-  if(n.dupSrc === "ai" || n.dupDecision) return;
-  const nm = norm(F("fNombre").value), col = norm(F("fColor").value);
-  const hit = nm ? S.productos.find(p => norm(p.nombre) === nm && (!col || !p.color || norm(p.color) === col)) : null;
-  const before = n.dupId;
+  const n = S.nuevo; if(!n || n.dupDecision) return;
+  const nm = norm(F("fNombre").value);
+  const same = nm ? S.productos.filter(p => norm(p.nombre) === nm) : [];
+  const num = norm(F("fNumero").value), ser = norm(F("fSerie").value);
+  const serOk = p => { const ps = norm(p.serie); return !ser || !ps || ps === ser || ps.includes(ser) || ser.includes(ps); };
+  const hit = same.find(p => (!num || !p.numero || norm(p.numero) === num) && serOk(p));
+  const before = n.dupId + "|" + n.varianteId;
   n.dupId = hit ? hit.id : null; n.dupSrc = hit ? "local" : null;
-  if(before !== n.dupId && silent !== true) renderNotices();
+  n.varianteId = (!hit && same.length) ? same[0].id : null;
+  if(before !== n.dupId + "|" + n.varianteId && silent !== true) renderNotices();
+}
+async function achicar(b, max){
+  const img = await decode(b);
+  const k = Math.min(1, max / Math.max(img.width, img.height));
+  if(k === 1) return b;
+  const cv = document.createElement("canvas"); cv.width = Math.round(img.width*k); cv.height = Math.round(img.height*k);
+  cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+  return await new Promise(ok => cv.toBlob(ok, "image/jpeg", 0.85));
 }
 
 function aiNote(){
@@ -790,21 +805,21 @@ function renderChips(){
 function renderNotices(){
   const n = S.nuevo; if(!n) return;
   const st = F("addStatus");
-  if(n.status === "leyendo"){ st.hidden = false; st.innerHTML = '<span class="spin"></span> Leyendo el blister y comparando con tu inventario…'; }
+  if(n.status === "leyendo"){ st.hidden = false; st.innerHTML = '<span class="spin"></span> ' + (n.parcial ? `Leyendo… “${esc(n.parcial)}”` : "Leyendo el blister…"); }
   else if(n.status === "error"){ st.hidden = false; st.innerHTML = `<span>${esc(errTxt(n.err))}</span> <button type="button" class="btn text" id="retryAi">Reintentar</button>`; $("#retryAi").onclick = identificar; }
   else if(n.status === "manual"){ st.hidden = false; st.textContent = "Escribe el nombre como aparece en el blister."; }
   else st.hidden = true;
 
   const out = [];
   if(n.help){
-    out.push(`<div class="notice warn"><h3>Necesito tu ayuda con el nombre</h3><p>${esc(n.help)}${n.ai && n.ai.nombre ? ` Lo que alcancé a leer: “${esc(n.ai.nombre)}”.` : ""} Escribe cómo quieres registrarlo, o guárdalo sin nombre y lo completas después.</p></div>`);
+    out.push(`<div class="notice warn"><h3>Necesito tu ayuda con el nombre</h3><p>${esc(n.help)}${n.ai && n.ai.nombre ? ` Lo que alcancé a leer: “${esc(n.ai.nombre)}”.` : ""} Escribe cómo quieres registrarlo, o guárdalo sin nombre y lo completas después.</p>${S.sample && S.imgOk ? '<div class="row"><button type="button" class="btn ghost" id="readDeep">Leer con más detalle (tarda más)</button></div>' : ""}</div>`);
   }
   if(n.foreign){
     out.push(`<div class="notice warn"><h3>Nombre en otro idioma</h3><p>El empaque dice “${esc(n.foreign.original)}” (${esc(n.foreign.lang.toUpperCase())}). No es un Hot Wheels, así que dime cómo lo registro: usa una opción de abajo o escríbelo tú.</p></div>`);
   }
   const d = n.dupId && byId(n.dupId);
   if(d && n.dupDecision !== "distinto"){
-    out.push(`<div class="notice dup" id="dupBox"><h3>Parece repetido</h3><p>${n.dupSrc === "ai" ? "Claude cree que" : "Por el nombre,"} ya tienes este producto:</p>
+    out.push(`<div class="notice dup" id="dupBox"><h3>Parece repetido</h3><p>Ya tienes un producto con el mismo nombre${F("fNumero").value.trim() ? " y número" : ""}:</p>
       <div class="match">${thumb(d)}<div><b>${esc(d.nombre)}</b><small>${meta(d) || ""} · existencia ×${cant(d)}</small></div></div>
       <div class="row"><button type="button" class="btn primary" id="dupSame">Es el mismo: sumar</button><button type="button" class="btn ghost" id="dupDiff">Es otro: guardar aparte</button></div></div>`);
   } else if(n.varianteId && byId(n.varianteId)){
@@ -816,6 +831,7 @@ function renderNotices(){
   if(ds) ds.onclick = () => sumarExistente(n.dupId);
   if(dd) dd.onclick = () => { n.dupDecision = "distinto"; renderNotices(); };
   if(vs) vs.onclick = () => sumarExistente(n.varianteId);
+  const rd = $("#readDeep"); if(rd) rd.onclick = () => identificar(true);
   F("addSave").textContent = (d && n.dupDecision !== "distinto") ? "Guardar como producto nuevo" : "Guardar en inventario";
 }
 
