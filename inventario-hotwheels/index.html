@@ -363,6 +363,7 @@ body.visitor::before{background:var(--bg)}
     <div class="owner-bar owner-only">
       <a class="btn ghost" href="#inventario">← Volver al inventario</a>
       <button class="btn ghost" id="catEdit" type="button">Editar portada</button>
+      <button class="btn ghost" id="catWeb" type="button">Enviar a la página web</button>
       <button class="btn primary" id="copyCat2" type="button">Copiar liga</button>
     </div>
     <header class="cat-hero">
@@ -1227,6 +1228,64 @@ async function descargarPDF(){
   }
 }
 F("catPdf").onclick = descargarPDF;
+
+/* ---------- Exportar para la página web (bixosdement.com) ----------
+   Packs the catalog data and every thumbnail (base64) into a few JSON files in the
+   artifact's asset store and records their ids in config/exportweb, so Claude can
+   copy them to the WordPress site in a couple of reads. */
+function aB64(buf){
+  const b = new Uint8Array(buf); let s = "";
+  for(let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+let exportando = false;
+async function exportarWeb(){
+  if(exportando || S.visitor) return;
+  if(!S.assets || !S.db){ toast("Solo el dueño puede enviar a la página web."); return; }
+  const btn = F("catWeb"); exportando = true; btn.disabled = true;
+  const label = t => btn.innerHTML = '<span class="spin"></span> ' + t;
+  try{
+    const prods = catalogoBase();
+    const datos = prods.map(p => ({ id:p.id, nombre:p.nombre, serie:p.serie||"", numero:p.numero||"", color:p.color||"", anio:p.anio||"",
+      precio:precioDe(p), precioAntes:antesDe(p), cantidad:cant(p), vendidos:Number(p.vendidos)||0, creado:p.creado||0, esHotWheels:p.esHotWheels !== false, img:p.mini||p.foto||null }));
+    const LIM = 6 * 1024 * 1024;
+    const partes = []; let cur = {}, tam = 0, hechos = 0, i = 0;
+    const conImg = datos.filter(d => d.img);
+    // fetch six at a time, keep order stable
+    const b64 = new Array(conImg.length);
+    await Promise.all(Array.from({length:6}, async () => {
+      while(i < conImg.length){
+        const k = i++;
+        try{ const r = await fetch(blob(conImg[k].img)); if(r.ok) b64[k] = aB64(await r.arrayBuffer()); }catch(_){}
+        hechos++; if(hechos % 10 === 0) label(`Empaquetando fotos ${hechos}/${conImg.length}…`);
+      }
+    }));
+    conImg.forEach((d, k) => {
+      if(!b64[k]) return;
+      if(tam + b64[k].length > LIM && tam){ partes.push(cur); cur = {}; tam = 0; }
+      cur[d.img] = b64[k]; tam += b64[k].length;
+    });
+    if(tam) partes.push(cur);
+    label("Subiendo paquete…");
+    const ids = [];
+    const meta = { version:1, fecha:Date.now(), contacto:S.cfg.contacto||"", productos:datos, partes:partes.length };
+    ids.push((await S.assets.upload(new Blob([JSON.stringify(meta)], {type:"application/json"}), {type:"application/json"})).id);
+    for(let k = 0; k < partes.length; k++){
+      label(`Subiendo paquete ${k+1}/${partes.length}…`);
+      ids.push((await S.assets.upload(new Blob([JSON.stringify({ parte:k+1, imagenes:partes[k] })], {type:"application/json"}), {type:"application/json"})).id);
+    }
+    const ref = S.db.doc("config/exportweb");
+    const prev = await ref.get();
+    await ref.set({ archivos: ids, fecha: Date.now(), productos: datos.length });
+    if(prev.exists){ (prev.data().archivos || []).forEach(a => S.assets.delete(a).catch(() => {})); }
+    toast("Paquete listo. Ahora dile a Claude: “actualiza la página web”.");
+  }catch(e){
+    toast("No se pudo preparar el paquete (" + ((e && e.code) || "error") + ").");
+  }finally{
+    exportando = false; btn.disabled = false; btn.textContent = "Enviar a la página web";
+  }
+}
+F("catWeb").onclick = exportarWeb;
 
 function copiarLiga(){
   const inp = F("catLink"), url = inp.value;
