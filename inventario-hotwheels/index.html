@@ -1148,17 +1148,38 @@ async function descargarPDF(){
     const BLUE = [24,70,196], FLAME = [255,178,26], INK = [21,24,28], MUTED = [91,99,109], LINE = [214,218,224], OK = [23,128,74];
     const titulo = latin((S.cfg.titulo || "").trim() || "Colección a la venta");
     const fecha = new Intl.DateTimeFormat("es-MX", { day:"numeric", month:"long", year:"numeric" }).format(new Date());
-    // cover band
-    doc.setFillColor(...BLUE); doc.rect(0, 0, W, 54, "F");
-    doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(9);
-    doc.text("CATÁLOGO", M, 12);
-    doc.setFontSize(24); doc.text(doc.splitTextToSize(titulo.toUpperCase(), W - 2*M).slice(0,1), M, 24);
-    doc.setFontSize(14); doc.text("JUGUETERÍA PETUS", M, 32);
-    doc.setFont("helvetica","normal"); doc.setFontSize(10);
-    const sub = latin(`${list.length} modelo${list.length === 1 ? "" : "s"} disponible${list.length === 1 ? "" : "s"} · Actualizado el ${fecha}`);
-    doc.text(sub, M, 41);
-    if(S.cfg.contacto) doc.text(doc.splitTextToSize(latin(S.cfg.contacto), W - 2*M).slice(0,1), M, 48);
-    let y = 62, col = 0, page = 1;
+    // cover: same look as the catalog header (blue card, stripes, two-color title, store name, count pill)
+    const hasC = !!S.cfg.contacto;
+    const CH = hasC ? 72 : 64;
+    doc.setFillColor(...BLUE); doc.roundedRect(M, M, W - 2*M, CH, 5, 5, "F");
+    doc.setDrawColor(70,110,215); doc.setLineWidth(3.2);
+    for(let sx = W - M - 58; sx < W - M + 30; sx += 9){
+      const x1 = Math.max(sx, W - M - 58), x2 = Math.min(sx + 30, W - M - 7);
+      if(x2 > x1) doc.line(x1, M + CH - 1 - (x1 - sx) * (CH - 2) / 30, x2, M + CH - 1 - (x2 - sx) * (CH - 2) / 30);
+    }
+    doc.setLineWidth(0.2);
+    const L = M + 10;
+    doc.setTextColor(214,224,250); doc.setFont("helvetica","bold"); doc.setFontSize(10);
+    doc.setCharSpace(1.6); doc.text("CATÁLOGO", L, M + 11); doc.setCharSpace(0);
+    let ty = M + 24;
+    if(S.cfg.titulo && S.cfg.titulo.trim()){
+      doc.setTextColor(255,255,255); doc.setFontSize(30);
+      doc.splitTextToSize(titulo.toUpperCase(), W - 2*M - 70).slice(0,2).forEach(l => { doc.text(l, L, ty); ty += 12; });
+    }else{
+      doc.setTextColor(255,255,255); doc.setFontSize(28); doc.text("COLECCIÓN", L, ty); ty += 11;
+      doc.setTextColor(...FLAME); doc.setFont("helvetica","bolditalic"); doc.text("A LA VENTA", L, ty); ty += 9.5;
+    }
+    doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(15);
+    doc.setCharSpace(0.8); doc.text("JUGUETERÍA PETUS", L, ty); doc.setCharSpace(0); ty += 7;
+    if(hasC){ doc.setFont("helvetica","normal"); doc.setFontSize(10.5); doc.text(doc.splitTextToSize(latin(S.cfg.contacto), W - 2*M - 70).slice(0,1), L, ty); ty += 5.5; }
+    const pill = latin(`${list.length} modelo${list.length === 1 ? "" : "s"} disponible${list.length === 1 ? "" : "s"}`);
+    doc.setFont("helvetica","bold"); doc.setFontSize(11);
+    const pw2 = doc.getTextWidth(pill) + 12;
+    doc.setFillColor(18,52,150); doc.roundedRect(L, ty - 1, pw2, 9, 4.5, 4.5, "F");
+    doc.setTextColor(255,255,255); doc.text(pill, L + 6, ty + 5.1);
+    doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(...MUTED);
+    doc.text(latin(`Actualizado el ${fecha}`), W - M, M + CH + 6, { align:"right" });
+    let y = M + CH + 11, col = 0, page = 1;
     const footer = () => { doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(...MUTED); doc.text(`Precios en pesos mexicanos (MXN) · Página ${page}`, W/2, H - 6, { align:"center" }); };
     list.forEach((p, idx) => {
       if(y + ch > H - 12){ footer(); doc.addPage(); page++; y = M; col = 0; }
