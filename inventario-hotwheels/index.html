@@ -254,6 +254,8 @@ body.visitor::before{background:var(--bg)}
 .owner-pick label{flex:1;display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:600;min-height:48px}
 .owner-pick input{position:absolute;opacity:0;pointer-events:none}
 .owner-pick label:has(input:checked){border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+/* Search bars stay pinned under the header while scrolling */
+.stick{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--top-h,0px));z-index:15;background:var(--bg);padding-block:8px;margin-block:-8px;box-shadow:0 8px 8px -8px rgba(20,24,28,.18)}
 /* Toast */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px);box-shadow:var(--shadow);font-weight:500}
 .toast button{background:none;border:0;color:var(--accent);font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;padding:4px}
@@ -285,7 +287,7 @@ body.visitor::before{background:var(--bg)}
       <input id="catLink" class="inp" readonly value="https://claude.ai/artifact/Unp4nxVGF8JB7cvdh1gMek#catalogo" aria-label="Liga del catálogo">
       <div class="row"><a class="btn primary" href="#catalogo">Ver catálogo</a><button class="btn ghost" id="copyCat" type="button">Copiar liga</button></div>
     </div>
-    <div class="search"><input id="invQ" class="inp" type="search" placeholder="Filtrar por nombre, serie o color" autocomplete="off"></div>
+    <div class="search stick"><input id="invQ" class="inp" type="search" placeholder="Filtrar por nombre, serie o color" autocomplete="off"></div>
     <div class="chips" id="invFiltros">
       <button class="chip on" data-f="todos">Todos</button>
       <button class="chip" data-f="pendientes">Sin nombre</button>
@@ -354,7 +356,7 @@ body.visitor::before{background:var(--bg)}
       <h2>Registrar venta</h2>
       <p class="lead">Dime el nombre. Cuando aparezca el carrito correcto, confírmalo e indica cuántos vendiste.</p>
     </div>
-    <div class="search">
+    <div class="search stick">
       <input id="venQ" class="inp big" type="search" placeholder="Nombre del carrito" autocomplete="off">
       <button class="mic" id="mic" type="button" aria-label="Dictar nombre" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
     </div>
@@ -382,13 +384,11 @@ body.visitor::before{background:var(--bg)}
       <p id="catContact" hidden></p>
       <span class="count" id="catCount">Cargando…</span>
     </header>
-    <div class="cat-tools">
-      <div class="cat-bar">
+    <div class="cat-bar stick">
         <input id="catQ" class="inp" type="search" placeholder="Buscar modelo, serie o color" autocomplete="off" aria-label="Buscar en el catálogo">
         <button class="btn ghost" id="catFilt" type="button" aria-label="Ordenar y filtrar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtros<span class="fbadge" id="catFiltN" hidden></span></button>
-      </div>
-      <button class="btn primary pdfbtn" id="catPdf" type="button">Descargar catálogo en PDF</button>
     </div>
+    <button class="btn primary pdfbtn" id="catPdf" type="button">Descargar catálogo en PDF</button>
     <div id="catGrid" class="cat-grid"></div>
     <div id="catEmpty" class="empty" hidden><b>Aún no hay productos en el catálogo</b><span>Aparecen aquí los productos con nombre y existencia.</span></div>
     <p class="cat-foot">Precios en pesos mexicanos (MXN). Existencias actualizadas al momento.</p>
@@ -1300,6 +1300,16 @@ async function migrarMinis(){
 function setSync(t){ $("#sync").textContent = t; }
 function banner(t){ const b = $("#globalBanner"); b.hidden = !t; b.textContent = t || ""; }
 
+function medirCabecera(){
+  const h = document.querySelector(".top");
+  const alto = (h && h.offsetParent !== null) ? h.offsetHeight : 0;
+  document.documentElement.style.setProperty("--top-h", alto + "px");
+}
+window.addEventListener("resize", medirCabecera);
+if("ResizeObserver" in window){ const hdr = document.querySelector(".top"); if(hdr) new ResizeObserver(medirCabecera).observe(hdr); }
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(medirCabecera);
+medirCabecera();
+
 (async function boot(){
   const C = window.claude;
   if(!C || !C.use){ setSync("Sin conexión"); banner("Abre esta página desde claude.ai para guardar tu inventario."); return; }
@@ -1308,6 +1318,7 @@ function banner(t){ const b = $("#globalBanner"); b.hidden = !t; b.textContent =
   if(user){ try{ S.owner = await user.isOwner(); }catch(_){ S.owner = true; } }
   else S.owner = false;
   if(!S.owner){ S.visitor = true; document.body.classList.add("visitor"); route(); }
+  medirCabecera();
   if(!S.visitor) C.use("sample").then(async s => {
     S.sample = s;
     if(s){ const l = await s.limits().catch(() => null); S.imgOk = !!(l && l.images); }
