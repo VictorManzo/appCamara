@@ -246,6 +246,14 @@ body.visitor::before{background:var(--bg)}
 .off{position:absolute;left:8px;top:8px;background:var(--danger);color:#fff;font-weight:700;font-size:12px;padding:2px 8px;border-radius:999px;z-index:1}
 .pdfbtn{width:100%}
 
+.own{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;font-family:var(--f-display);font-weight:700;font-size:16px;line-height:1;color:#fff;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25);flex:none}
+.own-L{background:#c2185b}.own-V{background:#0f766e}
+.ph .own,.bl-bubble .own{position:absolute;left:8px;bottom:8px;z-index:1}
+.item .own{width:22px;height:22px;font-size:14px}
+.owner-pick{display:flex;gap:8px}
+.owner-pick label{flex:1;display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:600;min-height:48px}
+.owner-pick input{position:absolute;opacity:0;pointer-events:none}
+.owner-pick label:has(input:checked){border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 /* Toast */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px);box-shadow:var(--shadow);font-weight:500}
 .toast button{background:none;border:0;color:var(--accent);font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;padding:4px}
@@ -284,6 +292,8 @@ body.visitor::before{background:var(--bg)}
       <button class="chip" data-f="repetidos">Con repetidos</button>
       <button class="chip" data-f="sinprecio">Sin precio</button>
       <button class="chip" data-f="agotados">Agotados</button>
+      <button class="chip" data-f="L"><span class="own own-L" style="width:20px;height:20px;font-size:13px">L</span> Lupita</button>
+      <button class="chip" data-f="V"><span class="own own-V" style="width:20px;height:20px;font-size:13px">V</span> Victor</button>
     </div>
     <div id="invCards" class="cards"></div>
     <div id="invEmpty" class="empty" hidden>
@@ -319,6 +329,7 @@ body.visitor::before{background:var(--bg)}
       <label class="field"><span>Nombre</span><input id="fNombre" class="inp big" placeholder="Nombre como aparece en el blister"></label>
       <div id="nameChips" class="chips" hidden></div>
       <label class="field"><span>Precio de venta por pieza</span><div class="money"><span>$</span><input id="fPrecio" inputmode="decimal" placeholder="0.00" aria-label="Precio en pesos"></div></label>
+      <div class="field"><span>Dueño</span><div class="owner-pick" role="radiogroup"><label><input type="radio" name="fDueno" value="V" checked><span class="own own-V">V</span>Victor</label><label><input type="radio" name="fDueno" value="L"><span class="own own-L">L</span>Lupita</label></div></div>
       <div class="grid2">
         <label class="field"><span>Serie</span><input id="fSerie" class="inp" placeholder="HW Exotics"></label>
         <label class="field"><span>Nº colección</span><input id="fNumero" class="inp" placeholder="45/250"></label>
@@ -422,6 +433,8 @@ const MXN = new Intl.NumberFormat("es-MX",{style:"currency",currency:"MXN",minim
 const precioDe = p => { const v = Number(p && p.precio); return isFinite(v) && v > 0 ? v : null; };
 const antesDe = p => { const a = Number(p && p.precioAntes), v = precioDe(p); return isFinite(a) && a > 0 && v != null && a > v ? a : null; };
 const descDe = p => { const a = antesDe(p); return a ? Math.round((1 - precioDe(p) / a) * 100) : 0; };
+const duenoDe = p => (p && p.dueno === "L") ? "L" : "V";
+const ownTag = p => `<span class="own own-${duenoDe(p)}" title="${duenoDe(p) === "L" ? "Lupita" : "Victor"}">${duenoDe(p)}</span>`;
 const fmtPrecio = v => v == null ? "" : MXN.format(v);
 function parsePrecio(t){ const c = String(t ?? "").replace(/[^0-9.,]/g,"").replace(/,(?=\d{3}\b)/g,"").replace(",","."); const v = parseFloat(c); return isFinite(v) && v > 0 ? Math.round(v*100)/100 : null; }
 const meta = p => [p.serie, p.numero, p.color, p.anio].filter(Boolean).map(esc).join(" · ");
@@ -499,13 +512,14 @@ function renderInventario(){
   if(S.filtro === "repetidos") list = list.filter(p => cant(p) > 1);
   if(S.filtro === "agotados") list = list.filter(p => cant(p) === 0);
   if(S.filtro === "sinprecio") list = list.filter(p => precioDe(p) == null);
+  if(S.filtro === "L" || S.filtro === "V") list = list.filter(p => duenoDe(p) === S.filtro);
   const pend = S.productos.filter(p => p.pendiente || !p.nombre).length;
   $("#invLead").textContent = pend ? `${pend} sin nombre. Toca cada uno para escribir cómo registrarlo.` : "Toca un carrito para editar nombre, precio, cantidad o notas.";
   $("#invEmpty").hidden = !(S.loaded && S.productos.length === 0);
   const total = list.length; list = list.slice(0, S.invLimit);
   $("#invCards").innerHTML = list.map(p => `
     <button class="card" data-id="${esc(p.id)}">
-      <div class="ph">${thumb(p)}${(p.pendiente||!p.nombre) ? '<span class="tag">Sin nombre</span>' : ""}<span class="badge ${cant(p)===0?"zero":""}">×${cant(p)}</span></div>
+      <div class="ph">${thumb(p)}${(p.pendiente||!p.nombre) ? '<span class="tag">Sin nombre</span>' : ""}<span class="badge ${cant(p)===0?"zero":""}">×${cant(p)}</span>${ownTag(p)}</div>
       <div class="cap"><b>${esc(p.nombre || "Sin nombre")}</b><small>${meta(p) || "&nbsp;"}</small>${precioDe(p) != null ? `<span class="price">${fmtPrecio(precioDe(p))}</span>` : '<small>Sin precio</small>'}</div>
     </button>`).join("") + (total > list.length ? `<button class="btn ghost more" data-more="inv">Ver más (${total - list.length})</button>` : "") || (S.productos.length ? '<p class="lead">Nada coincide con el filtro.</p>' : "");
   observarMas();
@@ -549,6 +563,7 @@ function openEdit(id){
       <label class="field"><span>Precio de venta</span><div class="money"><span>$</span><input id="ePrecio" inputmode="decimal" placeholder="0.00" value="${precioDe(p) ?? ""}" aria-label="Precio en pesos"></div></label>
       <label class="field"><span>Precio antes (descuento)</span><div class="money"><span>$</span><input id="eAntes" inputmode="decimal" placeholder="—" value="${antesDe(p) ?? ""}" aria-label="Precio anterior en pesos"></div></label>
     </div>
+    <div class="field"><span>Dueño</span><div class="owner-pick" role="radiogroup"><label><input type="radio" name="eDueno" value="V"${duenoDe(p) === "V" ? " checked" : ""}><span class="own own-V">V</span>Victor</label><label><input type="radio" name="eDueno" value="L"${duenoDe(p) === "L" ? " checked" : ""}><span class="own own-L">L</span>Lupita</label></div></div>
     <div class="grid2">
       <label class="field"><span>Serie</span><input id="eSerie" class="inp" value="${esc(p.serie)}"></label>
       <label class="field"><span>Nº colección</span><input id="eNumero" class="inp" value="${esc(p.numero)}"></label>
@@ -576,7 +591,7 @@ function openEdit(id){
   };
   $("#eSave").onclick = async () => {
     const nombre = $("#eNombre").value.trim();
-    const data = { nombre, pendiente: !nombre, serie: $("#eSerie").value.trim(), numero: $("#eNumero").value.trim(), color: $("#eColor").value.trim(), anio: $("#eAnio").value.trim(), cantidad: Math.max(0, parseInt($("#eCant").value,10) || 0), precio: parsePrecio($("#ePrecio").value), precioAntes: parsePrecio($("#eAntes").value), notas: $("#eNotas").value.trim(), actualizado: Date.now() };
+    const data = { nombre, pendiente: !nombre, serie: $("#eSerie").value.trim(), numero: $("#eNumero").value.trim(), color: $("#eColor").value.trim(), anio: $("#eAnio").value.trim(), cantidad: Math.max(0, parseInt($("#eCant").value,10) || 0), precio: parsePrecio($("#ePrecio").value), precioAntes: parsePrecio($("#eAntes").value), dueno: ($('input[name="eDueno"]:checked') || {}).value === "L" ? "L" : "V", notas: $("#eNotas").value.trim(), actualizado: Date.now() };
     const otro = nombre && S.productos.find(x => x.id !== p.id && norm(x.nombre) === norm(nombre) && norm(x.color) === norm(data.color));
     try{
       await S.db.doc("productos/" + p.id).update(data);
@@ -725,6 +740,7 @@ async function onPick(e){
   if(S.nuevo && S.nuevo.url) URL.revokeObjectURL(S.nuevo.url);
   S.nuevo = { orig:b, blob:b, crop:null, url:URL.createObjectURL(b), ai:null, status:"idle", touched:{}, dupId:null, dupSrc:null, dupDecision:null, varianteId:null, help:null, foreign:null };
   FIELDS.forEach(f => F(f).value = ""); F("fCant").value = 1;
+  { const ultimo = (() => { try{ return localStorage.getItem("petusDueno"); }catch(_){ return null; } })(); const r = document.querySelector(`input[name="fDueno"][value="${ultimo === "L" ? "L" : "V"}"]`); if(r) r.checked = true; }
   F("addImg").src = S.nuevo.url; renderCropBar();
   $("#addStart").hidden = true; $("#addForm").hidden = false;
   renderNotices(); renderChips();
@@ -930,9 +946,11 @@ async function guardarNuevo(sinNombre){
       serie: F("fSerie").value.trim(), numero: F("fNumero").value.trim(), color: F("fColor").value.trim(), anio: F("fAnio").value.trim(),
       cantidad: Math.max(1, parseInt(F("fCant").value,10) || 1),
       precio: parsePrecio(F("fPrecio").value),
+      dueno: (document.querySelector('input[name="fDueno"]:checked') || {}).value === "L" ? "L" : "V",
       notas: F("fNotas").value.trim(), foto, mini, creado: now, actualizado: now
     });
     const prG = parsePrecio(F("fPrecio").value);
+    try{ localStorage.setItem("petusDueno", (document.querySelector('input[name="fDueno"]:checked') || {}).value || "V"); }catch(_){}
     toast(nombre ? `Guardado: ${nombre}${prG != null ? " · " + fmtPrecio(prG) : " (sin precio)"}` : "Guardado sin nombre. Complétalo en Inventario › Sin nombre.");
     resetAdd();
   }catch(e){
@@ -951,7 +969,7 @@ function renderVentasRes(){
   F("venNoneTxt").textContent = `No encontré “${q}”`;
   F("venAi").hidden = !S.sample;
   F("venRes").innerHTML = list.slice(0, 30).map(p => `
-    <button class="item" data-id="${esc(p.id)}">${thumb(p)}<div class="info"><div class="name">${esc(p.nombre || "Sin nombre")}</div><div class="meta">${precioDe(p) != null ? `<span class="price">${fmtPrecio(precioDe(p))}</span> · ` : ""}${meta(p) || "&nbsp;"}</div></div><span class="qty ${cant(p)===0?"zero":""}">×${cant(p)}</span></button>`).join("")
+    <button class="item" data-id="${esc(p.id)}">${thumb(p)}<div class="info"><div class="name">${ownTag(p)} ${esc(p.nombre || "Sin nombre")}</div><div class="meta">${precioDe(p) != null ? `<span class="price">${fmtPrecio(precioDe(p))}</span> · ` : ""}${meta(p) || "&nbsp;"}</div></div><span class="qty ${cant(p)===0?"zero":""}">×${cant(p)}</span></button>`).join("")
     + (aiResults ? `<p class="lead">Sugerencias de Claude para “${esc(q)}”.</p>` : "");
 }
 F("venQ").addEventListener("input", () => { aiResults = null; renderVentasRes(); });
@@ -1038,7 +1056,7 @@ function renderCatalogo(){
     const off = descDe(p);
     return `<article class="bl${st ? "" : " out"}">
       <div class="bl-band"><span>${esc(p.serie || (p.esHotWheels === false ? "Coleccionable" : "Hot Wheels"))}</span>${p.numero ? `<span class="bl-num">${esc(p.numero)}</span>` : ""}</div>
-      <div class="bl-bubble">${off ? `<span class="off">-${off}%</span>` : ""}${thumb(p)}${st ? "" : '<span class="bl-stamp">Agotado</span>'}</div>
+      <div class="bl-bubble">${off ? `<span class="off">-${off}%</span>` : ""}${thumb(p)}${ownTag(p)}${st ? "" : '<span class="bl-stamp">Agotado</span>'}</div>
       <div class="bl-body">
         <div class="bl-name">${esc(p.nombre)}</div>
         ${[p.color, p.anio].filter(Boolean).length ? `<div class="bl-meta">${[p.color, p.anio].filter(Boolean).map(esc).join(" · ")}</div>` : ""}
@@ -1190,6 +1208,7 @@ async function descargarPDF(){
       doc.setFillColor(245,246,248); doc.roundedRect(bx, by, bw, imgH, 3, 3, "F");
       const im = imgs[idx];
       if(im){ const k = Math.min((bw - 3) / im.w, (imgH - 3) / im.h); const iw = im.w * k, ih = im.h * k; doc.addImage(im.url, "JPEG", bx + (bw - iw)/2, by + (imgH - ih)/2, iw, ih, undefined, "FAST"); }
+      { const dn = duenoDe(p); doc.setFillColor(...(dn === "L" ? [194,24,91] : [15,118,110])); doc.circle(bx + bw - 4.5, by + imgH - 4.5, 3.2, "F"); doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.text(dn, bx + bw - 4.5, by + imgH - 3.3, { align:"center" }); }
       const off = descDe(p);
       if(off){ doc.setFillColor(192,53,42); doc.roundedRect(bx + 1.5, by + 1.5, 13, 5, 2.5, 2.5, "F"); doc.setTextColor(255,255,255); doc.setFontSize(7); doc.text(`-${off}%`, bx + 8, by + 5, { align:"center" }); }
       // name
@@ -1247,7 +1266,7 @@ async function exportarWeb(){
   try{
     const prods = catalogoBase();
     const datos = prods.map(p => ({ id:p.id, nombre:p.nombre, serie:p.serie||"", numero:p.numero||"", color:p.color||"", anio:p.anio||"",
-      precio:precioDe(p), precioAntes:antesDe(p), cantidad:cant(p), vendidos:Number(p.vendidos)||0, creado:p.creado||0, esHotWheels:p.esHotWheels !== false, img:p.mini||p.foto||null }));
+      precio:precioDe(p), precioAntes:antesDe(p), cantidad:cant(p), vendidos:Number(p.vendidos)||0, creado:p.creado||0, esHotWheels:p.esHotWheels !== false, dueno:duenoDe(p), img:p.mini||p.foto||null }));
     const LIM = 6 * 1024 * 1024;
     const partes = []; let cur = {}, tam = 0, hechos = 0, i = 0;
     const conImg = datos.filter(d => d.img);

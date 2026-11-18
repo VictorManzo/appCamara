@@ -51,6 +51,7 @@ function petus_catalogo_importar(array $files) {
             'vendidos' => max(0, (int)($p['vendidos'] ?? 0)),
             'creado' => (int)($p['creado'] ?? 0),
             'hw' => !empty($p['esHotWheels']),
+            'dueno' => (($p['dueno'] ?? 'V') === 'L') ? 'L' : 'V',
             'img' => ($img && file_exists($dir['path'] . $img . '.jpg')) ? $img : null,
         );
     }
@@ -123,6 +124,8 @@ add_shortcode('petus_catalogo', function () {
 .petus-cat .bubble{margin:10px;border-radius:18px;aspect-ratio:1/1;max-width:100%;overflow:hidden;background:repeating-linear-gradient(115deg,var(--surface-2) 0 12px,var(--bg) 12px 24px);border:2px solid var(--line);position:relative;display:grid;place-items:center}
 .petus-cat .bubble img{width:100%;height:100%;object-fit:contain;display:block;padding:6px;margin:0;border:0;box-shadow:none}
 .petus-cat .bubble svg{width:40%;height:40%;color:var(--muted)}
+.petus-cat .own{position:absolute;left:8px;bottom:8px;z-index:1;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;font-family:var(--f-display);font-weight:700;font-size:17px;line-height:1;color:#fff;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.petus-cat .own-L{background:#c2185b}.petus-cat .own-V{background:#0f766e}
 .petus-cat .off{position:absolute;left:8px;top:8px;background:var(--danger);color:#fff;font-weight:700;font-size:12px;padding:2px 8px;border-radius:999px;z-index:1}
 .petus-cat .body{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1}
 .petus-cat .name{font-family:var(--f-display);font-weight:700;font-size:20px;line-height:1.02;text-transform:uppercase;overflow-wrap:anywhere}
@@ -210,7 +213,7 @@ add_shortcode('petus_catalogo', function () {
   function card(p){
     var pr = precio(p), off = desc(p), st = p.cantidad;
     return '<article class="bl"><div class="band"><span>' + esc(p.serie || (p.hw ? 'Hot Wheels' : 'Coleccionable')) + '</span>' + (p.numero ? '<span class="num">' + esc(p.numero) + '</span>' : '') + '</div>' +
-      '<div class="bubble">' + (off ? '<span class="off">-' + off + '%</span>' : '') + (p.img ? '<img src="' + esc(p.img) + '" alt="' + esc(p.nombre) + '" loading="lazy" decoding="async" width="420" height="420">' : CAR) + '</div>' +
+      '<div class="bubble">' + (off ? '<span class="off">-' + off + '%</span>' : '') + (p.img ? '<img src="' + esc(p.img) + '" alt="' + esc(p.nombre) + '" loading="lazy" decoding="async" width="420" height="420">' : CAR) + '<span class="own own-' + (p.dueno === 'L' ? 'L' : 'V') + '">' + (p.dueno === 'L' ? 'L' : 'V') + '</span></div>' +
       '<div class="body"><div class="name">' + esc(p.nombre) + '</div>' + ([p.color, p.anio].filter(Boolean).length ? '<div class="meta">' + [p.color, p.anio].filter(Boolean).map(esc).join(' · ') + '</div>' : '') +
       '<div class="foot">' + (pr != null ? '<span>' + (antes(p) ? '<span class="was">' + fmt(antes(p)) + '</span>' : '') + '<span class="tag"><b>' + fmt(pr) + '</b></span></span>' : '<span class="tag ask"><b>Precio a consultar</b></span>') +
       '<span class="stock">' + (st === 1 ? 'Última pieza' : st + ' disponibles') + '</span></div></div></article>';
@@ -313,6 +316,7 @@ add_shortcode('petus_catalogo', function () {
         var bx = x + 3, by = y + 10.5, bw = cw - 6;
         doc.setFillColor(245,246,248); doc.roundedRect(bx, by, bw, imgH, 3, 3, 'F');
         var im = imgs[idx]; if(im){ var k = Math.min((bw - 3) / im.w, (imgH - 3) / im.h), iw = im.w * k, ih = im.h * k; doc.addImage(im.url, 'JPEG', bx + (bw - iw)/2, by + (imgH - ih)/2, iw, ih, undefined, 'FAST'); }
+        var dn = p.dueno === 'L' ? 'L' : 'V'; doc.setFillColor.apply(doc, dn === 'L' ? [194,24,91] : [15,118,110]); doc.circle(bx + bw - 4.5, by + imgH - 4.5, 3.2, 'F'); doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text(dn, bx + bw - 4.5, by + imgH - 3.3, {align:'center'});
         var off = desc(p); if(off){ doc.setFillColor(192,53,42); doc.roundedRect(bx + 1.5, by + 1.5, 13, 5, 2.5, 2.5, 'F'); doc.setTextColor(255,255,255); doc.setFontSize(7); doc.text('-' + off + '%', bx + 8, by + 5, {align:'center'}); }
         doc.setTextColor.apply(doc, INK); doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
         doc.text(doc.splitTextToSize(latin(p.nombre).toUpperCase(), cw - 6).slice(0, 2), x + 3, by + imgH + 5.5);
