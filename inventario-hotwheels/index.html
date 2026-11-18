@@ -180,6 +180,7 @@ details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
 .cat-hero .eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
 .cat-hero h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:clamp(34px,10vw,52px);line-height:.95;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance;position:relative;z-index:1}
 .cat-hero h1 em{font-style:italic;color:var(--flame)}
+.cat-hero .store{margin:2px 0 0;font-family:var(--f-display);font-weight:700;font-size:clamp(20px,6vw,28px);letter-spacing:.06em;text-transform:uppercase;color:#fff;opacity:1;max-width:none}
 .cat-hero p{margin:4px 0 0;font-size:15px;opacity:.92;position:relative;z-index:1;max-width:40ch;user-select:text}
 .cat-hero .count{display:inline-flex;gap:6px;align-items:center;align-self:flex-start;margin-top:6px;background:rgba(0,0,0,.25);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;position:relative;z-index:1}
 .cat-tools{display:flex;flex-direction:column;gap:10px}
@@ -365,8 +366,9 @@ body.visitor::before{background:var(--bg)}
       <button class="btn primary" id="copyCat2" type="button">Copiar liga</button>
     </div>
     <header class="cat-hero">
-      <span class="eyebrow">Catálogo · Escala 1:64</span>
+      <span class="eyebrow">Catálogo</span>
       <h1 id="catTitle">Colección <em>a la venta</em></h1>
+      <p class="store">Juguetería PETUS</p>
       <p id="catContact" hidden></p>
       <span class="count" id="catCount">Cargando…</span>
     </header>
@@ -1147,15 +1149,16 @@ async function descargarPDF(){
     const titulo = latin((S.cfg.titulo || "").trim() || "Colección a la venta");
     const fecha = new Intl.DateTimeFormat("es-MX", { day:"numeric", month:"long", year:"numeric" }).format(new Date());
     // cover band
-    doc.setFillColor(...BLUE); doc.rect(0, 0, W, 44, "F");
+    doc.setFillColor(...BLUE); doc.rect(0, 0, W, 54, "F");
     doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(9);
-    doc.text("CATÁLOGO · ESCALA 1:64", M, 12);
+    doc.text("CATÁLOGO", M, 12);
     doc.setFontSize(24); doc.text(doc.splitTextToSize(titulo.toUpperCase(), W - 2*M).slice(0,1), M, 24);
+    doc.setFontSize(14); doc.text("JUGUETERÍA PETUS", M, 32);
     doc.setFont("helvetica","normal"); doc.setFontSize(10);
     const sub = latin(`${list.length} modelo${list.length === 1 ? "" : "s"} disponible${list.length === 1 ? "" : "s"} · Actualizado el ${fecha}`);
-    doc.text(sub, M, 32);
-    if(S.cfg.contacto) doc.text(doc.splitTextToSize(latin(S.cfg.contacto), W - 2*M).slice(0,1), M, 39);
-    let y = 52, col = 0, page = 1;
+    doc.text(sub, M, 41);
+    if(S.cfg.contacto) doc.text(doc.splitTextToSize(latin(S.cfg.contacto), W - 2*M).slice(0,1), M, 48);
+    let y = 62, col = 0, page = 1;
     const footer = () => { doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(...MUTED); doc.text(`Precios en pesos mexicanos (MXN) · Página ${page}`, W/2, H - 6, { align:"center" }); };
     list.forEach((p, idx) => {
       if(y + ch > H - 12){ footer(); doc.addPage(); page++; y = M; col = 0; }
