@@ -367,8 +367,7 @@ body.visitor::before{background:var(--bg)}
     </div>
     <header class="cat-hero">
       <span class="eyebrow">Catálogo</span>
-      <h1 id="catTitle">Colección <em>a la venta</em></h1>
-      <p class="store">Juguetería PETUS</p>
+      <h1 id="catTitle">Juguetería PETUS</h1>
       <p id="catContact" hidden></p>
       <span class="count" id="catCount">Cargando…</span>
     </header>
@@ -1023,9 +1022,6 @@ function openVenta(id){
 /* ---------- CATÁLOGO ---------- */
 function catalogoBase(){ return S.productos.filter(p => p.nombre && !p.pendiente); }
 function renderCatalogo(){
-  const titulo = (S.cfg.titulo || "").trim();
-  const h = F("catTitle");
-  if(titulo) h.textContent = titulo; else h.innerHTML = "Colección <em>a la venta</em>";
   const c = F("catContact"); c.hidden = !S.cfg.contacto; c.textContent = S.cfg.contacto || "";
   const base = catalogoBase();
   const list0 = listaCatalogo();
@@ -1146,11 +1142,10 @@ async function descargarPDF(){
     const W = 215.9, H = 279.4, M = 12, G = 5, COLS = 3;
     const cw = (W - 2*M - (COLS-1)*G) / COLS, ch = 79, imgH = 45;
     const BLUE = [24,70,196], FLAME = [255,178,26], INK = [21,24,28], MUTED = [91,99,109], LINE = [214,218,224], OK = [23,128,74];
-    const titulo = latin((S.cfg.titulo || "").trim() || "Colección a la venta");
     const fecha = new Intl.DateTimeFormat("es-MX", { day:"numeric", month:"long", year:"numeric" }).format(new Date());
     // cover: same look as the catalog header (blue card, stripes, two-color title, store name, count pill)
     const hasC = !!S.cfg.contacto;
-    const CH = hasC ? 72 : 64;
+    const CH = hasC ? 58 : 50;
     doc.setFillColor(...BLUE); doc.roundedRect(M, M, W - 2*M, CH, 5, 5, "F");
     doc.setDrawColor(70,110,215); doc.setLineWidth(3.2);
     for(let sx = W - M - 58; sx < W - M + 30; sx += 9){
@@ -1162,15 +1157,9 @@ async function descargarPDF(){
     doc.setTextColor(214,224,250); doc.setFont("helvetica","bold"); doc.setFontSize(10);
     doc.setCharSpace(1.6); doc.text("CATÁLOGO", L, M + 11); doc.setCharSpace(0);
     let ty = M + 24;
-    if(S.cfg.titulo && S.cfg.titulo.trim()){
-      doc.setTextColor(255,255,255); doc.setFontSize(30);
-      doc.splitTextToSize(titulo.toUpperCase(), W - 2*M - 70).slice(0,2).forEach(l => { doc.text(l, L, ty); ty += 12; });
-    }else{
-      doc.setTextColor(255,255,255); doc.setFontSize(28); doc.text("COLECCIÓN", L, ty); ty += 11;
-      doc.setTextColor(...FLAME); doc.setFont("helvetica","bolditalic"); doc.text("A LA VENTA", L, ty); ty += 9.5;
-    }
-    doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(15);
-    doc.setCharSpace(0.8); doc.text("JUGUETERÍA PETUS", L, ty); doc.setCharSpace(0); ty += 7;
+    ty += 4;
+    doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(34);
+    doc.text("JUGUETERÍA PETUS", L, ty); ty += 10;
     if(hasC){ doc.setFont("helvetica","normal"); doc.setFontSize(10.5); doc.text(doc.splitTextToSize(latin(S.cfg.contacto), W - 2*M - 70).slice(0,1), L, ty); ty += 5.5; }
     const pill = latin(`${list.length} modelo${list.length === 1 ? "" : "s"} disponible${list.length === 1 ? "" : "s"}`);
     doc.setFont("helvetica","bold"); doc.setFontSize(11);
@@ -1250,14 +1239,13 @@ F("copyCat").onclick = copiarLiga;
 F("copyCat2").onclick = copiarLiga;
 F("catEdit").onclick = () => {
   openSheet(`<h2>Portada del catálogo</h2>
-    <label class="field"><span>Título</span><input id="cTitulo" class="inp big" placeholder="Colección a la venta" value="${esc(S.cfg.titulo)}"></label>
     <label class="field"><span>Contacto o mensaje</span><textarea id="cContacto" class="inp" placeholder="Pedidos por WhatsApp al 55 1234 5678 · Entregas en …">${esc(S.cfg.contacto)}</textarea></label>
     <button class="btn primary block" id="cSave">Guardar portada</button>
     <button class="btn text" id="cClose">Cerrar</button>`);
   $("#cClose").onclick = closeSheet;
   $("#cSave").onclick = async () => {
     try{
-      await S.db.doc("config/catalogo").set({ titulo: $("#cTitulo").value.trim(), contacto: $("#cContacto").value.trim(), actualizado: Date.now() });
+      await S.db.doc("config/catalogo").set({ contacto: $("#cContacto").value.trim(), actualizado: Date.now() });
       closeSheet(); toast("Portada guardada");
     }catch(e){ toast("No se pudo guardar (" + (e.code||"error") + ")"); }
   };
@@ -1298,6 +1286,7 @@ function banner(t){ const b = $("#globalBanner"); b.hidden = !t; b.textContent =
   aiNote();
   const user = await C.use("user");
   if(user){ try{ S.owner = await user.isOwner(); }catch(_){ S.owner = true; } }
+  else S.owner = false;
   if(!S.owner){ S.visitor = true; document.body.classList.add("visitor"); route(); }
   if(!S.visitor) C.use("sample").then(async s => {
     S.sample = s;
@@ -1317,7 +1306,11 @@ function banner(t){ const b = $("#globalBanner"); b.hidden = !t; b.textContent =
   });
 
   const db = await C.use("db");
-  if(!db){ setSync("Sin base de datos"); banner("No pude abrir la base de datos del inventario. Inicia sesión en claude.ai y vuelve a abrir la página."); S.loaded = true; renderAll(); return; }
+  if(!db){
+    setSync("Sin base de datos");
+    banner(S.visitor ? "Para ver los productos de Juguetería PETUS inicia sesión en claude.ai (es gratis) y vuelve a abrir esta liga." : "No pude abrir la base de datos del inventario. Inicia sesión en claude.ai y vuelve a abrir la página.");
+    S.loaded = true; renderAll(); return;
+  }
   S.db = db;
   const slow = setTimeout(() => setSync("Sin conexión por ahora…"), 10000);
   db.collection("productos").onSnapshot(snap => {
