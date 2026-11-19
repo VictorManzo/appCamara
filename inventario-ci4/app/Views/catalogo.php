@@ -69,6 +69,37 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
 .petus-sheet .btn{appearance:none;border-radius:10px;padding:12px 16px;font-weight:600;font-size:17px;cursor:pointer;min-height:52px;font-family:inherit}
 .petus-sheet .outline{background:#fff;border:1.5px solid #5b636d;color:#15181c}
 .petus-sheet .dark{background:#15181c;color:#fff;border:0}
+.petus-cat .buy{margin-top:4px}
+.petus-cat .add{width:100%;background:var(--accent);color:#fff;min-height:42px;font-size:15px}
+.petus-cat .qbox{display:flex;align-items:center;justify-content:space-between;border:2px solid var(--accent);border-radius:10px;overflow:hidden;background:var(--surface)}
+.petus-cat .qbox button{width:44px;height:40px;border:0;background:var(--accent);color:#fff;font-size:22px;font-weight:700;cursor:pointer}
+.petus-cat .qbox span{font-family:var(--f-display);font-weight:700;font-size:20px}
+.petus-cat{padding-bottom:110px}
+.petus-cartbar{position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:10px max(16px,env(safe-area-inset-left,0px)) calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(236,238,241,0),#eceef1 30%);display:flex;justify-content:center;font-family:"Barlow",system-ui,sans-serif}
+.petus-cartbar[hidden]{display:none!important}
+.petus-cartbar button{width:100%;max-width:560px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#15181c;color:#fff;border:0;border-radius:14px;padding:14px 18px;font:600 17px "Barlow",system-ui,sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.petus-cartbar b{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:24px;color:#ffb21a}
+.petus-cartbar .n{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:999px;background:#e8550f;font-size:14px;margin-right:8px}
+.petus-sheet .prow{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #d6dae0}
+.petus-sheet .prow img,.petus-sheet .prow .ph{width:52px;height:52px;border-radius:8px;object-fit:contain;background:#f5f6f8}
+.petus-sheet .pname{font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.petus-sheet .pline{display:flex;align-items:center;gap:8px;margin-top:6px;color:#5b636d;font-size:14px;flex-wrap:wrap}
+.petus-sheet .mini{display:flex;border:1px solid #d6dae0;border-radius:8px;overflow:hidden}
+.petus-sheet .mini button{width:34px;height:32px;border:0;background:#f5f6f8;font-size:18px;cursor:pointer}
+.petus-sheet .mini span{min-width:30px;display:grid;place-items:center;font-weight:700}
+.petus-sheet .psub{text-align:right;font:700 18px "Barlow Condensed",sans-serif;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.petus-sheet .quitar{border:0;background:none;color:#5b636d;text-decoration:underline;font-size:13px;cursor:pointer;padding:2px}
+.petus-sheet .ptotal{display:flex;justify-content:space-between;align-items:baseline;border-top:2px dashed #d6dae0;padding-top:10px}
+.petus-sheet .ptotal b{font:700 30px "Barlow Condensed",sans-serif;color:#e8550f}
+.petus-sheet label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:#5b636d;text-transform:uppercase;letter-spacing:.05em}
+.petus-sheet .inp{border:1px solid #d6dae0;border-radius:10px;padding:12px;font:16px "Barlow",system-ui,sans-serif;color:#15181c;text-transform:none;letter-spacing:0;font-weight:400}
+.petus-sheet .orange{background:#e8550f;color:#fff;border:0}
+.petus-sheet .wa{background:#1f9d55;color:#fff;border:0;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.petus-sheet .block{width:100%}
+.petus-sheet .msg{background:#fdf1dc;color:#7a4a05;border:1px solid #efc77d;border-radius:10px;padding:10px 12px;font-size:14px}
+.petus-sheet .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.petus-sheet .monto{font:700 34px "Barlow Condensed",sans-serif;margin:0}
+.petus-sheet p{margin:0;line-height:1.4}
 @media (max-width:420px){.petus-cat .grid{grid-template-columns:1fr 1fr;gap:10px}.petus-cat .name{font-size:17px}.petus-cat .tag{font-size:19px}}
 </style>
   <header class="hero">
@@ -87,6 +118,7 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
   <p class="note"></p>
   <script type="application/json" class="petus-data"><?= $json ?></script>
 </div>
+<div class="petus-cartbar" id="petusCartbar" hidden><button type="button"><span><span class="n"></span>Ver mi pedido</span><b></b></button></div>
 <div class="petus-sheet" id="petusSheet" hidden><div class="panel" role="dialog" aria-modal="true" aria-label="Ordenar y filtrar"></div></div>
 <script>
 (function(){
@@ -129,7 +161,8 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
       '<div class="bubble">' + (off ? '<span class="off">-' + off + '%</span>' : '') + (p.img ? '<img src="' + esc(p.img) + '" alt="' + esc(p.nombre) + '" loading="lazy" decoding="async" width="420" height="420">' : CAR) + '<span class="own own-' + (p.dueno === 'L' ? 'L' : 'V') + '">' + (p.dueno === 'L' ? 'L' : 'V') + '</span></div>' +
       '<div class="body"><div class="name">' + esc(p.nombre) + '</div>' + ([p.color, p.anio].filter(Boolean).length ? '<div class="meta">' + [p.color, p.anio].filter(Boolean).map(esc).join(' · ') + '</div>' : '') +
       '<div class="foot">' + (pr != null ? '<span>' + (antes(p) ? '<span class="was">' + fmt(antes(p)) + '</span>' : '') + '<span class="tag"><b>' + fmt(pr) + '</b></span></span>' : '<span class="tag ask"><b>Precio a consultar</b></span>') +
-      '<span class="stock">' + (st === 1 ? 'Última pieza' : st + ' disponibles') + '</span></div></div></article>';
+      '<span class="stock">' + (st === 1 ? 'Última pieza' : st + ' disponibles') + '</span></div>' +
+      '<div class="buy" data-id="' + p.id + '">' + botonCompra(p) + '</div></div></article>';
   }
   var obs = ('IntersectionObserver' in window) ? new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ obs.unobserve(e.target); limite += PAGE; render(); } }); }, {rootMargin:'400px'}) : null;
   function render(){
@@ -139,6 +172,114 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
     $('.grid').innerHTML = vis.map(card).join('') + (total > vis.length ? '<button class="btn ghost more" type="button">Ver más (' + (total - vis.length) + ')</button>' : '') || (P.length ? '<p class="note">Nada coincide con la búsqueda o los filtros.</p>' : '');
     var m = $('.more'); if(m){ m.onclick = function(){ limite += PAGE; render(); }; if(obs) obs.observe(m); }
   }
+  var sheet = document.getElementById('petusSheet'); document.body.appendChild(sheet);
+  // ---------- pedido (lista de compras) ----------
+  var CSRF_H = document.querySelector('meta[name="csrf-header"]').content, CSRF_T = document.querySelector('meta[name="csrf-token"]').content;
+  var BASE = <?= json_encode(rtrim(site_url(), '/') . '/') ?>;
+  var carrito = {};
+  try{ carrito = JSON.parse(localStorage.getItem('petusPedido') || '{}') || {}; }catch(e){ carrito = {}; }
+  function porId(id){ id = Number(id); for(var i = 0; i < P.length; i++){ if(P[i].id === id) return P[i]; } return null; }
+  function limpiarCarrito(){ Object.keys(carrito).forEach(function(id){ var p = porId(id); if(!p) delete carrito[id]; else carrito[id] = Math.min(carrito[id], p.cantidad); }); }
+  function guardar(){ try{ localStorage.setItem('petusPedido', JSON.stringify(carrito)); }catch(e){} }
+  function botonCompra(p){
+    var n = carrito[p.id] || 0;
+    if(!n) return '<button class="btn add" type="button" data-act="add">Agregar al pedido</button>';
+    return '<div class="qbox"><button type="button" data-act="menos" aria-label="Quitar uno">−</button><span>' + n + '</span><button type="button" data-act="mas" aria-label="Agregar otro"' + (n >= p.cantidad ? ' disabled style="opacity:.4"' : '') + '>+</button></div>';
+  }
+  function resumen(){
+    var piezas = 0, total = 0, sinPrecio = 0;
+    Object.keys(carrito).forEach(function(id){ var p = porId(id), n = carrito[id]; if(!p) return; piezas += n; if(precio(p) != null) total += precio(p) * n; else sinPrecio++; });
+    return { piezas: piezas, total: total, sinPrecio: sinPrecio };
+  }
+  var bar = document.getElementById('petusCartbar'); document.body.appendChild(bar);
+  function pintarBarra(){
+    var r = resumen();
+    bar.hidden = !r.piezas;
+    bar.querySelector('.n').textContent = r.piezas;
+    bar.querySelector('b').textContent = fmt(r.total) + (r.sinPrecio ? ' +' : '');
+  }
+  function cambiar(id, d){
+    var p = porId(id); if(!p) return;
+    var n = Math.max(0, Math.min(p.cantidad, (carrito[id] || 0) + d));
+    if(n) carrito[id] = n; else delete carrito[id];
+    guardar(); pintarBarra();
+    var box = root.querySelector('.buy[data-id="' + id + '"]'); if(box) box.innerHTML = botonCompra(p);
+  }
+  root.querySelector('.grid').addEventListener('click', function(e){
+    var b = e.target.closest('[data-act]'); if(!b) return;
+    var id = b.closest('.buy').dataset.id;
+    cambiar(id, b.dataset.act === 'menos' ? -1 : 1);
+  });
+  bar.querySelector('button').onclick = function(){ abrirPedido(); };
+
+  var datosCliente = {};
+  try{ datosCliente = JSON.parse(localStorage.getItem('petusCliente') || '{}') || {}; }catch(e){}
+  function abrirHoja(html){ var panel = sheet.querySelector('.panel'); panel.setAttribute('aria-label', 'Mi pedido'); panel.innerHTML = '<div class="grab"></div>' + html; sheet.hidden = false; document.documentElement.style.overflow = 'hidden'; return panel; }
+  function abrirPedido(){
+    limpiarCarrito();
+    var ids = Object.keys(carrito), r = resumen();
+    if(!ids.length){ cerrar(); pintarBarra(); return; }
+    var panel = abrirHoja('<div class="head"><button class="x" type="button" aria-label="Cerrar">✕</button></div><h3>Mi pedido</h3>' +
+      ids.map(function(id){ var p = porId(id), n = carrito[id], pr = precio(p);
+        return '<div class="prow" data-id="' + p.id + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '<div class="ph"></div>') +
+          '<div><div class="pname">' + esc(p.nombre) + '</div><div class="pline"><div class="mini"><button type="button" data-d="-1" aria-label="Menos">−</button><span>' + n + '</span><button type="button" data-d="1" aria-label="Más">+</button></div><span>× ' + (pr != null ? fmt(pr) : 'precio a consultar') + '</span></div></div>' +
+          '<div class="psub">' + (pr != null ? fmt(pr * n) : '—') + '<button type="button" class="quitar" data-quitar>Quitar</button></div></div>'; }).join('') +
+      '<div class="ptotal"><span>Total del pedido (' + r.piezas + ' pieza' + (r.piezas === 1 ? '' : 's') + ')</span><b>' + fmt(r.total) + '</b></div>' +
+      (r.sinPrecio ? '<p style="color:#5b636d;font-size:14px">' + r.sinPrecio + ' producto(s) con precio a consultar: te confirmamos el precio.</p>' : '') +
+      '<hr><label class="f">Tu nombre<input class="inp" id="pNombre" autocomplete="name" value="' + esc(datosCliente.nombre || '') + '"></label>' +
+      '<label class="f">Teléfono o WhatsApp<input class="inp" id="pTel" type="tel" autocomplete="tel" inputmode="tel" value="' + esc(datosCliente.tel || '') + '"></label>' +
+      '<label class="f">Nota (opcional)<input class="inp" id="pNota" placeholder="Ej. entrega en el centro, pago en efectivo"></label>' +
+      '<div class="hp" aria-hidden="true"><label>No llenar<input id="pSitio" tabindex="-1" autocomplete="off"></label></div>' +
+      '<p class="msg" id="pMsg" hidden></p>' +
+      '<div class="foot"><button class="btn outline" type="button" id="pSeguir">Seguir viendo</button><button class="btn orange" type="button" id="pEnviar">Enviar pedido</button></div>');
+    panel.querySelector('.x').onclick = cerrar;
+    panel.querySelector('#pSeguir').onclick = cerrar;
+    panel.querySelectorAll('.prow').forEach(function(row){
+      var id = row.dataset.id;
+      row.querySelectorAll('[data-d]').forEach(function(b){ b.onclick = function(){ guardarCliente(); cambiar(id, Number(b.dataset.d)); abrirPedido(); }; });
+      row.querySelector('[data-quitar]').onclick = function(){ guardarCliente(); cambiar(id, -999); abrirPedido(); };
+    });
+    panel.querySelector('#pEnviar').onclick = function(){
+      guardarCliente();
+      var msg = panel.querySelector('#pMsg');
+      if(!datosCliente.nombre || (datosCliente.tel || '').replace(/\D/g, '').length < 8){ msg.hidden = false; msg.textContent = 'Escribe tu nombre y un teléfono para poder contactarte.'; return; }
+      confirmar(panel.querySelector('#pNota').value.trim(), panel.querySelector('#pSitio').value);
+    };
+  }
+  function guardarCliente(){
+    var n = document.getElementById('pNombre'), t = document.getElementById('pTel');
+    if(n) datosCliente = { nombre: n.value.trim(), tel: t.value.trim() };
+    try{ localStorage.setItem('petusCliente', JSON.stringify(datosCliente)); }catch(e){}
+  }
+  function confirmar(nota, sitio){
+    var r = resumen();
+    var panel = abrirHoja('<h3>¿Enviar tu pedido?</h3><p>' + r.piezas + ' pieza' + (r.piezas === 1 ? '' : 's') + ' por</p><p class="monto">' + fmt(r.total) + (r.sinPrecio ? ' <small style="font-size:16px">+ precio a consultar</small>' : '') + '</p>' +
+      '<p>A nombre de <b>' + esc(datosCliente.nombre) + '</b>, teléfono <b>' + esc(datosCliente.tel) + '</b>. Te contactaremos para confirmar disponibilidad, pago y entrega.</p>' +
+      '<p class="msg" id="cMsg" hidden></p>' +
+      '<div class="foot"><button class="btn outline" type="button" id="cNo">No, revisar</button><button class="btn orange" type="button" id="cSi">Sí, enviar pedido</button></div>');
+    panel.querySelector('#cNo').onclick = abrirPedido;
+    panel.querySelector('#cSi').onclick = function(){
+      var btn = this; btn.disabled = true; btn.textContent = 'Enviando…';
+      var h = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }; h[CSRF_H] = CSRF_T;
+      fetch(BASE + 'pedido', { method: 'POST', credentials: 'same-origin', headers: h, body: JSON.stringify({
+        cliente: datosCliente.nombre, telefono: datosCliente.tel, nota: nota, sitio_web: sitio,
+        items: Object.keys(carrito).map(function(id){ return { id: Number(id), cantidad: carrito[id] }; }) }) })
+      .then(function(res){ return res.json().then(function(j){ if(!res.ok) throw j; return j; }); })
+      .then(function(j){
+        carrito = {}; guardar(); pintarBarra(); render();
+        var panel2 = abrirHoja('<h3>¡Pedido enviado!</h3><p>Tu número de pedido es</p><p class="monto">' + esc(j.codigo) + '</p>' +
+          '<p>Total: <b>' + fmt(j.total || 0) + '</b>' + (j.sinPrecio ? ' + precio a consultar' : '') + '. Ya nos llegó tu pedido; te contactaremos pronto.</p>' +
+          (j.whatsapp ? '<a class="btn wa block" href="' + esc(j.whatsapp) + '" target="_blank" rel="noopener">Enviar también por WhatsApp</a>' : '') +
+          '<button class="btn dark block" type="button" id="okFin">Listo</button>');
+        panel2.querySelector('#okFin').onclick = cerrar;
+      })
+      .catch(function(err){
+        btn.disabled = false; btn.textContent = 'Sí, enviar pedido';
+        var m = panel.querySelector('#cMsg'); m.hidden = false; m.textContent = (err && err.error) || 'No se pudo enviar. Revisa tu internet e intenta de nuevo.';
+      });
+    };
+  }
+
   // portada
   $('.count').textContent = P.length + ' modelo' + (P.length === 1 ? '' : 's') + ' disponible' + (P.length === 1 ? '' : 's');
   if(D.contacto){ var c = $('.contacto'); c.hidden = false; c.textContent = D.contacto; }
@@ -146,7 +287,6 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
   $('.note').textContent = 'Precios en pesos mexicanos (MXN).' + (D.fecha ? ' Actualizado el ' + D.fecha + '.' : '');
   $('.q').addEventListener('input', function(){ limite = PAGE; render(); });
   // hoja de ordenar y filtrar
-  var sheet = document.getElementById('petusSheet'); document.body.appendChild(sheet);
   function rangosPrecio(){
     var ps = P.map(precio).filter(function(v){ return v != null; }).sort(function(a,b){ return a-b; });
     var uniq = ps.filter(function(v,i){ return ps.indexOf(v) === i; }); if(uniq.length < 2) return [];
@@ -247,6 +387,7 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
       doc.save('Catalogo-Jugueteria-PETUS.pdf');
     }).catch(function(){ alert('No se pudo crear el PDF. Intenta de nuevo.'); }).then(function(){ haciendo = false; btn.disabled = false; btn.textContent = 'Descargar catálogo en PDF'; });
   };
+  limpiarCarrito(); guardar(); pintarBarra();
   render();
 })();
 </script>

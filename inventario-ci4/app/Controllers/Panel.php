@@ -8,6 +8,7 @@ class Panel extends BaseController
 {
     public function index()
     {
+        \App\Libraries\Esquema::asegurar();
         $s = session();
         return view('panel', [
             'yo' => [

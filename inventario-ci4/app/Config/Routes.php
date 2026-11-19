@@ -8,6 +8,7 @@ $routes->setAutoRoute(false);
 // Público
 $routes->get('/', 'Auth::inicio');
 $routes->get('catalogo', 'Catalogo::index');
+$routes->post('pedido', 'Pedidos::crear');
 $routes->get('entrar', 'Auth::entrar');
 $routes->post('entrar', 'Auth::procesarEntrada');
 $routes->get('salir', 'Auth::salir');
@@ -37,4 +38,11 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     $r->post('usuarios/(:num)', 'Usuarios::actualizar/$1', ['filter' => 'auth:admin']);
     $r->post('usuarios/(:num)/eliminar', 'Usuarios::eliminar/$1', ['filter' => 'auth:admin']);
     $r->post('ajustes', 'Usuarios::ajustes', ['filter' => 'auth:admin']);
+
+    $r->get('pedidos', '\App\Controllers\Pedidos::lista', ['filter' => 'auth:admin']);
+    $r->post('pedidos/(:num)/estado', '\App\Controllers\Pedidos::estado/$1', ['filter' => 'auth:admin']);
+    $r->get('avisos', '\App\Controllers\Pedidos::avisos', ['filter' => 'auth:admin']);
+    $r->post('avisos', '\App\Controllers\Pedidos::guardarAvisos', ['filter' => 'auth:admin']);
+    $r->post('avisos/detectar-chat', '\App\Controllers\Pedidos::detectarChat', ['filter' => 'auth:admin']);
+    $r->post('avisos/probar', '\App\Controllers\Pedidos::probar', ['filter' => 'auth:admin']);
 });

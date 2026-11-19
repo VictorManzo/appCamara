@@ -541,7 +541,72 @@ if(ADMIN){
     };
   };
   F("btnUsuarios").onclick = abrirUsuarios;
+  F("btnPedidos").onclick = abrirPedidos;
+  F("btnAvisos").onclick = abrirAvisos;
 }
+
+/* ---------- pedidos del catálogo (admin) ---------- */
+let pedidos = [];
+async function cargarPedidos(){
+  if(!ADMIN) return;
+  try{ pedidos = await api("api/pedidos"); }catch(_){ return; }
+  const n = pedidos.filter(p => p.estado === "nuevo").length;
+  F("pedNuevos").hidden = !n; F("pedNuevos").textContent = n;
+}
+async function abrirPedidos(){
+  await cargarPedidos();
+  const fmt = new Intl.DateTimeFormat("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+  const ESTADOS = { nuevo:"Nuevo", atendido:"Atendido", cancelado:"Cancelado" };
+  const pintar = () => {
+    const panel = openSheet(`<h2>Pedidos del catálogo</h2>
+      <p class="lead">Los pedidos que hacen tus clientes. Márcalos como atendidos cuando los entregues.</p>
+      ${pedidos.length ? pedidos.map(p => `<div class="ticket" style="border-width:${p.estado === "nuevo" ? 2 : 1}px;border-color:${p.estado === "nuevo" ? "var(--accent)" : "var(--line)"}" data-id="${p.id}">
+        <div class="ticket-head"><h3>${esc(p.codigo)} · ${esc(p.cliente)}</h3><small>${fmt.format(new Date(p.fecha))}</small></div>
+        <div class="kv"><span>Tel. <b>${esc(p.telefono)}</b></span><span class="pill">${ESTADOS[p.estado] || p.estado}</span></div>
+        ${p.nota ? `<p class="lead" style="font-size:14px">Nota: ${esc(p.nota)}</p>` : ""}
+        <div>${p.items.map(it => `<div class="sale"><span><b>${it.cantidad}×</b> ${esc(it.nombre)} <span class="own own-${it.dueno === "L" ? "L" : "V"}" style="width:18px;height:18px;font-size:11px;vertical-align:middle">${it.dueno === "L" ? "L" : "V"}</span></span><span>${it.precio != null ? fmtPrecio(it.precio * it.cantidad) : "a consultar"}</span></div>`).join("")}</div>
+        <div class="t-total"><span>Total</span><b style="font-size:24px">${fmtPrecio(p.total)}</b></div>
+        <div class="row">${p.estado !== "atendido" ? '<button class="btn ghost" data-e="atendido" type="button">Marcar atendido</button>' : '<button class="btn ghost" data-e="nuevo" type="button">Volver a nuevo</button>'}${p.estado !== "cancelado" ? '<button class="btn text" data-e="cancelado" type="button">Cancelar</button>' : ""}</div>
+      </div>`).join("") : '<div class="empty"><b>Aún no hay pedidos</b><span>Cuando un cliente envíe un pedido desde el catálogo aparecerá aquí.</span></div>'}
+      <button class="btn text" id="pedClose" type="button">Cerrar</button>`);
+    F("pedClose").onclick = closeSheet;
+    $$("[data-e]", panel).forEach(b => b.onclick = async () => {
+      try{ pedidos = await api("api/pedidos/" + b.closest("[data-id]").dataset.id + "/estado", { json: { estado: b.dataset.e } }); const n = pedidos.filter(p => p.estado === "nuevo").length; F("pedNuevos").hidden = !n; F("pedNuevos").textContent = n; pintar(); }
+      catch(e){ toast(errMsg(e)); }
+    });
+  };
+  pintar();
+}
+async function abrirAvisos(){
+  let c; try{ c = await api("api/avisos"); }catch(e){ toast(errMsg(e)); return; }
+  openSheet(`<h2>Avisos de pedidos</h2>
+    <p class="lead">Elige cómo quieres enterarte de cada pedido nuevo. Todo es gratis. Los pedidos también quedan guardados en "Pedidos".</p>
+    <label class="field"><span>Correo donde recibir los pedidos</span><input id="avEmail" class="inp" type="email" placeholder="tucorreo@gmail.com" value="${esc(c.email)}"></label>
+    <label class="field"><span>Tu WhatsApp (10 dígitos)</span><input id="avWa" class="inp" inputmode="tel" placeholder="5512345678" value="${esc(c.whatsapp)}"></label>
+    <p class="lead" style="font-size:13px">Con WhatsApp, al terminar el pedido el cliente toca "Enviar también por WhatsApp" y se abre el chat contigo con el pedido ya escrito.</p>
+    <hr class="sep"><h3 class="opt-title">Telegram (aviso automático al celular)</h3>
+    <p class="lead" style="font-size:14px">1. En Telegram busca <b>@BotFather</b>, mándale <b>/newbot</b> y sigue los pasos. Te da un <b>token</b>.<br>2. Pégalo aquí y guarda.<br>3. Abre tu bot nuevo, toca <b>Iniciar</b> y mándale "hola".<br>4. Toca <b>Detectar mi chat</b>.</p>
+    <label class="field"><span>Token del bot</span><input id="avTok" class="inp" autocomplete="off" placeholder="123456789:ABC..." value="${esc(c.tgToken)}"></label>
+    <label class="field"><span>Chat</span><input id="avChat" class="inp" inputmode="numeric" placeholder="se llena solo" value="${esc(c.tgChat)}"></label>
+    <div class="row"><button class="btn ghost" id="avDet" type="button">Detectar mi chat</button><button class="btn ghost" id="avProb" type="button">Enviar prueba</button></div>
+    <button class="btn primary block" id="avSave" type="button">Guardar</button>
+    <button class="btn text" id="avClose" type="button">Cerrar</button>`);
+  const guardar = async () => api("api/avisos", { json: { email: F("avEmail").value.trim(), whatsapp: F("avWa").value.trim(), tgToken: F("avTok").value.trim(), tgChat: F("avChat").value.trim() } });
+  F("avClose").onclick = closeSheet;
+  F("avSave").onclick = async () => { try{ await guardar(); toast("Avisos guardados"); closeSheet(); }catch(e){ toast(errMsg(e)); } };
+  F("avDet").onclick = async () => {
+    try{ await guardar(); const r = await api("api/avisos/detectar-chat", { json: {} }); F("avChat").value = r.tgChat; toast("Chat encontrado" + (r.nombre ? ": " + r.nombre : "") + ". Toca Enviar prueba."); }
+    catch(e){ toast(errMsg(e)); }
+  };
+  F("avProb").onclick = async () => {
+    try{
+      await guardar(); const r = await api("api/avisos/probar", { json: {} });
+      const t = x => x === null ? "no configurado" : (x ? "enviado ✓" : "falló ✗");
+      toast(`Correo: ${t(r.email)} · Telegram: ${t(r.telegram)}`);
+    }catch(e){ toast(errMsg(e)); }
+  };
+}
+if(ADMIN){ cargarPedidos(); setInterval(() => { if(!document.hidden) cargarPedidos(); }, 60000); }
 async function abrirUsuarios(){
   let lista = [];
   try{ lista = await api("api/usuarios"); }catch(e){ toast(errMsg(e)); return; }

@@ -10,6 +10,7 @@ class Catalogo extends BaseController
 {
     public function index()
     {
+        \App\Libraries\Esquema::asegurar();
         $productos = [];
         try {
             $filas = (new ProductoModel())

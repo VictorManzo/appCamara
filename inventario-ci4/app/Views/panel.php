@@ -26,6 +26,7 @@
       <span class="lead" style="font-size:14px">Público, sin cuenta: muestra los productos con existencia y su precio.</span>
       <input id="catLink" class="inp" readonly value="<?= esc(site_url('catalogo')) ?>" aria-label="Liga del catálogo">
       <div class="row"><a class="btn primary" href="<?= site_url('catalogo') ?>" target="_blank" rel="noopener">Ver catálogo</a><button class="btn ghost" id="copyCat" type="button">Copiar liga</button></div>
+      <div class="row"><button class="btn primary" id="btnPedidos" type="button">Pedidos <span class="fbadge" id="pedNuevos" hidden></span></button><button class="btn ghost" id="btnAvisos" type="button">Avisos de pedidos</button></div>
       <div class="row"><button class="btn ghost" id="btnContacto" type="button">Contacto del catálogo</button><button class="btn ghost" id="btnUsuarios" type="button">Vendedores</button><a class="btn ghost" href="<?= site_url('importar') ?>">Importar</a></div>
     </div>
     <div class="search stick"><input id="invQ" class="inp" type="search" placeholder="Filtrar por nombre, serie o color" autocomplete="off"></div>
@@ -138,6 +139,6 @@ window.PETUS = <?= json_encode([
     'contacto' => $contacto,
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
 </script>
-<script src="<?= base_url('assets/panel.js') ?>?v=1"></script>
+<script src="<?= base_url('assets/panel.js') ?>?v=2"></script>
 </body>
 </html>
