@@ -253,6 +253,23 @@ body.visitor::before{background:var(--bg)}
 .owner-pick label:has(input:checked){border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 /* Search bars stay pinned under the header while scrolling */
 .stick{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--top-h,0px));z-index:15;background:var(--bg);padding-block:8px;margin-block:-8px;box-shadow:0 8px 8px -8px rgba(20,24,28,.18)}
+/* Sale ticket (cart) */
+.ticket{background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.ticket-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ticket-head h3{margin:0;font-family:var(--f-display);font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+.ticket-head small{color:var(--muted)}
+.t-row{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;padding-top:10px;border-top:1px solid var(--line)}
+.t-row img,.t-row .noimg{width:52px;height:52px;border-radius:8px;object-fit:contain;background:var(--surface-2)}
+.t-info{min-width:0;display:flex;flex-direction:column;gap:6px}
+.t-name{font-weight:600;overflow-wrap:anywhere;line-height:1.2}
+.t-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.t-line .stepper button{width:36px;font-size:20px}
+.t-line .stepper input{width:44px;font-size:20px}
+.t-sub{font-family:var(--f-display);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.t-del{border:0;background:none;color:var(--muted);font-size:13px;cursor:pointer;padding:4px;text-decoration:underline}
+.t-total{display:flex;justify-content:space-between;align-items:baseline;border-top:2px dashed var(--line);padding-top:10px}
+.t-total span{color:var(--muted);font-weight:600}
+.t-total b{font-family:var(--f-display);font-size:32px;color:var(--accent);font-variant-numeric:tabular-nums}
 /* Toast */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px);box-shadow:var(--shadow);font-weight:500}
 .toast button{background:none;border:0;color:var(--accent);font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;padding:4px}
@@ -351,7 +368,7 @@ body.visitor::before{background:var(--bg)}
   <section id="v-vender" class="view" hidden>
     <div>
       <h2>Registrar venta</h2>
-      <p class="lead">Dime el nombre. Cuando aparezca el carrito correcto, confírmalo e indica cuántos vendiste.</p>
+      <p class="lead">Busca cada producto, confírmalo y agrégalo a la venta. Cuando el cliente termine, registra la venta.</p>
     </div>
     <div class="search stick">
       <input id="venQ" class="inp big" type="search" placeholder="Nombre del carrito" autocomplete="off">
@@ -362,6 +379,13 @@ body.visitor::before{background:var(--bg)}
       <span>Puede estar escrito distinto en el inventario.</span>
       <button class="btn primary" id="venAi" type="button">Buscar con Claude</button>
     </div>
+    <section class="ticket" id="ticket" hidden aria-label="Venta actual">
+      <div class="ticket-head"><h3>Venta actual</h3><small id="tCount"></small></div>
+      <div id="tRows"></div>
+      <div class="t-total"><span>Total de la venta</span><b id="tTotal">$0</b></div>
+      <button class="btn primary block" id="tOk" type="button">Registrar venta</button>
+      <button class="btn text" id="tClear" type="button">Cancelar venta</button>
+    </section>
     <details class="sales" id="salesBox">
       <summary>Ventas recientes</summary>
       <div id="salesList"></div>
@@ -545,7 +569,7 @@ function renderVentas(){
   const fmt = new Intl.DateTimeFormat("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
   $("#salesList").innerHTML = S.ventas.length ? S.ventas.map(v => `<div class="sale"><span><b>${Number(v.cantidad)||0}×</b> ${esc(v.nombre||"Producto")}${v.total ? ` · <b>${fmtPrecio(v.total)}</b>` : ""}</span><time>${fmt.format(new Date(v.fecha||0))}</time></div>`).join("") : '<p class="lead" style="padding-bottom:12px">Aún no hay ventas registradas.</p>';
 }
-function renderAll(){ renderStats(); renderInventario(); renderVentasRes(); renderVentas(); renderCatalogo(); if(S.nuevo) renderNotices(); }
+function renderAll(){ renderStats(); renderInventario(); renderVentasRes(); renderVentas(); renderCatalogo(); if(S.loaded || S.productos.length) renderCarrito(); if(S.nuevo) renderNotices(); }
 
 /* ---------- edit sheet ---------- */
 function openEdit(id){
@@ -996,42 +1020,120 @@ function openVenta(id){
       <div class="row" style="margin-top:10px"><button class="btn ghost" id="vNo">No, es otro</button><button class="btn primary" id="vYes" ${stock ? "" : "disabled"}>${stock ? "Sí, es este" : "Sin existencias"}</button></div>
     </div>
     <div id="vQty" class="view" hidden>
-      <p class="q">¿Cuántos se vendieron?</p>
+      <p class="q">¿Cuántos se lleva?</p>
       <div class="stepper"><button type="button" data-step="-1" aria-label="Menos">−</button><input id="vCant" type="number" min="1" max="${stock}" value="1" inputmode="numeric" aria-label="Cantidad vendida"><button type="button" data-step="1" aria-label="Más">+</button></div>
       <p class="lead" id="vLeft">Quedarán ${stock - 1}.</p>
-      <button class="btn primary block" id="vOk">Registrar venta</button>
+      <button class="btn primary block" id="vOk">Agregar a la venta</button>
       <button class="btn text" id="vBack">Cancelar</button>
     </div>`);
   stepper(panel);
-  const upd = () => { let v = parseInt($("#vCant").value,10) || 1; v = Math.min(stock, Math.max(1, v)); $("#vLeft").textContent = `Quedarán ${stock - v}.` + (precioDe(p) != null ? ` Total: ${fmtPrecio(precioDe(p) * v)}.` : ""); $("#vOk").textContent = `Registrar venta de ${v}`; };
+  const yaEn = enCarrito(p.id);
+  const maxAdd = Math.max(0, stock - yaEn);
+  $("#vCant").max = Math.max(1, maxAdd);
+  const upd = () => {
+    let v = parseInt($("#vCant").value,10) || 1; v = Math.min(Math.max(1, maxAdd), Math.max(1, v));
+    $("#vLeft").textContent = (yaEn ? `Ya hay ${yaEn} en la venta. ` : "") + `Quedarán ${stock - yaEn - v}.` + (precioDe(p) != null ? ` Subtotal: ${fmtPrecio(precioDe(p) * v)}.` : "");
+    $("#vOk").textContent = `Agregar ${v} a la venta`;
+  };
   $("#vCant").addEventListener("input", upd); upd();
   $("#vNo").onclick = () => { closeSheet(); F("venQ").focus(); };
   $("#vBack").onclick = closeSheet;
-  $("#vYes").onclick = () => { $("#vAsk").hidden = true; $("#vQty").hidden = false; $("#vCant").focus(); $("#vCant").select(); };
-  $("#vOk").onclick = async () => {
-    const v = Math.min(stock, Math.max(1, parseInt($("#vCant").value,10) || 1));
-    $("#vOk").disabled = true; $("#vOk").textContent = "Registrando…";
-    try{
-      const ref = S.db.doc("productos/" + p.id);
-      const snap = await ref.get();
-      const actual = snap.exists ? cant(snap.data()) : stock;
-      const vend = Math.min(v, actual);
-      if(!vend){ toast("Ya no hay existencias de este producto."); closeSheet(); return; }
-      await ref.update({ cantidad: actual - vend, vendidos: (Number(snap.data().vendidos) || 0) + vend, actualizado: Date.now() });
-      const vRef = await S.db.collection("ventas").add({ productoId: p.id, nombre: p.nombre || "Sin nombre", cantidad: vend, precio: precioDe(p), total: precioDe(p) != null ? Math.round(precioDe(p) * vend * 100) / 100 : null, fecha: Date.now() });
-      closeSheet();
-      F("venQ").value = ""; aiResults = null; renderVentasRes();
-      toast(`Vendidos ${vend} de “${p.nombre}”${precioDe(p) != null ? " por " + fmtPrecio(precioDe(p) * vend) : ""}. Quedan ${actual - vend}.`, "Deshacer", async () => {
-        try{
-          const s2 = await ref.get();
-          if(s2.exists) await ref.update({ cantidad: cant(s2.data()) + vend, vendidos: Math.max(0, (Number(s2.data().vendidos) || 0) - vend), actualizado: Date.now() });
-          await vRef.delete();
-          toast("Venta deshecha");
-        }catch(e){ toast("No se pudo deshacer (" + (e.code||"error") + ")"); }
-      });
-    }catch(e){ toast("No se pudo registrar (" + (e.code||"error") + ")"); $("#vOk").disabled = false; upd(); }
+  $("#vYes").onclick = () => {
+    if(!maxAdd){ toast("Ya agregaste todas las piezas que hay de este producto."); return; }
+    $("#vAsk").hidden = true; $("#vQty").hidden = false; $("#vCant").focus(); $("#vCant").select();
+  };
+  $("#vOk").onclick = () => {
+    const v = Math.min(maxAdd, Math.max(1, parseInt($("#vCant").value,10) || 1));
+    agregarAlCarrito(p.id, v);
+    closeSheet();
+    F("venQ").value = ""; aiResults = null; renderVentasRes();
+    toast(`Agregado: ${v} × ${p.nombre}. Busca otro producto o registra la venta.`);
   };
 }
+
+/* ---------- Venta actual (varios productos) ---------- */
+// The ticket lives in browser storage so it survives a reload; stock only changes on "Registrar venta".
+S.carrito = (() => { try{ const c = JSON.parse(localStorage.getItem("petusCarrito") || "[]"); return Array.isArray(c) ? c.filter(x => x && x.id && x.cant > 0) : []; }catch(_){ return []; } })();
+function guardarCarrito(){ try{ localStorage.setItem("petusCarrito", JSON.stringify(S.carrito)); }catch(_){} }
+function enCarrito(id){ const it = S.carrito.find(x => x.id === id); return it ? it.cant : 0; }
+function agregarAlCarrito(id, n){
+  const it = S.carrito.find(x => x.id === id);
+  if(it) it.cant += n; else S.carrito.push({ id, cant: n });
+  guardarCarrito(); renderCarrito();
+}
+function renderCarrito(){
+  const box = F("ticket");
+  // drop products that no longer exist, cap at current stock
+  S.carrito = S.carrito.filter(x => byId(x.id)).map(x => ({ id: x.id, cant: Math.min(x.cant, Math.max(1, cant(byId(x.id)))) }));
+  box.hidden = !S.carrito.length;
+  if(!S.carrito.length) return;
+  let total = 0, piezas = 0, sinPrecio = 0;
+  F("tRows").innerHTML = S.carrito.map(x => {
+    const p = byId(x.id), pr = precioDe(p), sub = pr != null ? pr * x.cant : null;
+    piezas += x.cant; if(sub != null) total += sub; else sinPrecio++;
+    return `<div class="t-row" data-id="${esc(p.id)}">${thumb(p)}
+      <div class="t-info"><div class="t-name">${ownTag(p)} ${esc(p.nombre || "Sin nombre")}</div>
+        <div class="t-line"><div class="stepper"><button type="button" data-tstep="-1" aria-label="Menos">−</button><input type="number" min="1" max="${cant(p)}" value="${x.cant}" inputmode="numeric" aria-label="Cantidad" data-tq><button type="button" data-tstep="1" aria-label="Más">+</button></div><span>× ${pr != null ? fmtPrecio(pr) : "sin precio"}</span></div></div>
+      <div class="t-sub">${sub != null ? fmtPrecio(sub) : "—"}<button type="button" class="t-del" data-tdel>Quitar</button></div>
+    </div>`;
+  }).join("");
+  F("tCount").textContent = `${S.carrito.length} producto${S.carrito.length === 1 ? "" : "s"} · ${piezas} pieza${piezas === 1 ? "" : "s"}`;
+  F("tTotal").textContent = fmtPrecio(total) + (sinPrecio ? " + " + sinPrecio + " sin precio" : "");
+  F("tOk").textContent = `Registrar venta · ${fmtPrecio(total)}`;
+}
+F("tRows").addEventListener("click", e => {
+  const row = e.target.closest(".t-row"); if(!row) return;
+  const it = S.carrito.find(x => x.id === row.dataset.id); if(!it) return;
+  if(e.target.closest("[data-tdel]")){ S.carrito = S.carrito.filter(x => x !== it); guardarCarrito(); renderCarrito(); return; }
+  const st = e.target.closest("[data-tstep]");
+  if(st){ it.cant = Math.min(cant(byId(it.id)), Math.max(1, it.cant + Number(st.dataset.tstep))); guardarCarrito(); renderCarrito(); }
+});
+F("tRows").addEventListener("change", e => {
+  if(!e.target.matches("[data-tq]")) return;
+  const it = S.carrito.find(x => x.id === e.target.closest(".t-row").dataset.id); if(!it) return;
+  it.cant = Math.min(cant(byId(it.id)), Math.max(1, parseInt(e.target.value,10) || 1)); guardarCarrito(); renderCarrito();
+});
+let confirmarCancelar = 0;
+F("tClear").onclick = () => {
+  if(Date.now() - confirmarCancelar > 4000){ confirmarCancelar = Date.now(); F("tClear").textContent = "Toca otra vez para cancelar la venta"; setTimeout(() => F("tClear").textContent = "Cancelar venta", 4000); return; }
+  S.carrito = []; guardarCarrito(); renderCarrito(); F("tClear").textContent = "Cancelar venta"; toast("Venta cancelada");
+};
+F("tOk").onclick = async () => {
+  if(!S.carrito.length || !S.db) return;
+  const btn = F("tOk"); btn.disabled = true; btn.textContent = "Registrando…";
+  const ventaId = "v" + Date.now().toString(36);
+  const hechos = []; const faltan = [];
+  try{
+    for(const it of S.carrito){
+      const p = byId(it.id); if(!p) continue;
+      const ref = S.db.doc("productos/" + it.id);
+      const snap = await ref.get();
+      const actual = snap.exists ? cant(snap.data()) : 0;
+      const vend = Math.min(it.cant, actual);
+      if(vend < it.cant) faltan.push(p.nombre);
+      if(!vend) continue;
+      await ref.update({ cantidad: actual - vend, vendidos: (Number(snap.data().vendidos) || 0) + vend, actualizado: Date.now() });
+      const pr = precioDe(p);
+      const vRef = await S.db.collection("ventas").add({ ventaId, productoId: p.id, nombre: p.nombre || "Sin nombre", cantidad: vend, precio: pr, total: pr != null ? Math.round(pr * vend * 100) / 100 : null, fecha: Date.now() });
+      hechos.push({ ref, vRef, vend, total: pr != null ? pr * vend : 0 });
+    }
+    const piezas = hechos.reduce((a, h) => a + h.vend, 0), total = hechos.reduce((a, h) => a + h.total, 0);
+    S.carrito = []; guardarCarrito(); renderCarrito();
+    const msg = `Venta registrada: ${piezas} pieza${piezas === 1 ? "" : "s"} por ${fmtPrecio(total)}.` + (faltan.length ? ` Sin existencia suficiente: ${faltan.join(", ")}.` : "");
+    toast(msg, "Deshacer", async () => {
+      try{
+        for(const h of hechos){
+          const s2 = await h.ref.get();
+          if(s2.exists) await h.ref.update({ cantidad: cant(s2.data()) + h.vend, vendidos: Math.max(0, (Number(s2.data().vendidos) || 0) - h.vend), actualizado: Date.now() });
+          await h.vRef.delete();
+        }
+        toast("Venta deshecha");
+      }catch(e){ toast("No se pudo deshacer (" + (e.code||"error") + ")"); }
+    });
+  }catch(e){
+    toast("No se pudo registrar toda la venta (" + (e.code||"error") + "). Revisa las existencias.");
+  }finally{ btn.disabled = false; renderCarrito(); }
+};
 
 /* ---------- CATÁLOGO ---------- */
 function catalogoBase(){ return S.productos.filter(p => p.nombre && !p.pendiente); }
