@@ -112,9 +112,6 @@ textarea.inp{min-height:72px;resize:vertical}
 /* Search */
 .search{display:flex;gap:8px}
 .search .inp{flex:1;min-width:0}
-.mic{width:52px;flex:none;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:grid;place-items:center}
-.mic svg{width:22px;height:22px}
-.mic.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 
 /* Lists */
 .list{display:flex;flex-direction:column;gap:8px}
@@ -358,7 +355,6 @@ body.visitor::before{background:var(--bg)}
     </div>
     <div class="search stick">
       <input id="venQ" class="inp big" type="search" placeholder="Nombre del carrito" autocomplete="off">
-      <button class="mic" id="mic" type="button" aria-label="Dictar nombre" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
     </div>
     <div id="venRes" class="list"></div>
     <div id="venNone" class="empty" hidden>
@@ -1325,16 +1321,6 @@ medirCabecera();
     aiNote(); renderVentasRes();
   });
   if(!S.visitor) C.use("assets").then(a => { S.assets = a; });
-  if(!S.visitor) C.use("dictation").then(d => {
-    if(!d) return; S.dict = d; const mic = F("mic"); mic.hidden = false;
-    d.onPartial(({text}) => { F("venQ").value = text; aiResults = null; renderVentasRes(); });
-    d.onFinal(({text}) => { F("venQ").value = text.replace(/[.。]+$/,"").trim(); aiResults = null; renderVentasRes(); });
-    d.onState(({state, reason}) => { mic.classList.toggle("on", state === "listening"); });
-    mic.onclick = () => {
-      if(mic.classList.contains("on")){ d.stop().catch(() => {}); return; }
-      d.start().catch(e => { if(e && e.code === "not_granted") mic.hidden = true; });
-    };
-  });
 
   const db = await C.use("db");
   if(!db){
