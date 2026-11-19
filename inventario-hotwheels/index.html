@@ -144,7 +144,7 @@ details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
 
 /* Tabs */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-.tabs .wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding-block:6px}
+.tabs .wrap{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;padding-block:6px}
 .tab{border:0;background:none;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:10px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;min-height:54px;justify-content:center}
 .tab svg{width:24px;height:24px}
 .tab[aria-current="page"]{color:var(--ink);background:var(--surface-2)}
@@ -208,6 +208,11 @@ details.sales summary{cursor:pointer;font-weight:600;padding:10px 0}
 .owner-bar .btn{flex:1 1 150px;min-height:44px;font-size:15px}
 body.visitor .tabs,body.visitor .top,body.visitor .owner-only{display:none!important}
 body.visitor::before{background:var(--bg)}
+.seller-only{display:none!important}
+body.seller .seller-only{display:flex!important}
+body.seller .owner-only,body.seller .tab[data-tab="inventario"],body.seller .tab[data-tab="agregar"]{display:none!important}
+.sale small{color:var(--muted)}
+.who{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 
 /* Crop */
 .cropbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
@@ -419,6 +424,7 @@ body.visitor::before{background:var(--bg)}
   <div class="wrap">
     <a class="tab" href="#inventario" data-tab="inventario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Inventario</a>
     <a class="tab add" href="#agregar" data-tab="agregar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Agregar</a>
+    <a class="tab seller-only" href="#catalogo" data-tab="catalogo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 9h16"/></svg>Catálogo</a>
     <a class="tab" href="#vender" data-tab="vender"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Vender</a>
   </div>
 </nav>
@@ -511,6 +517,7 @@ const VIEWS = ["inventario","agregar","vender","catalogo"];
 function route(){
   let v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "inventario";
   if(S.visitor) v = "catalogo";
+  else if(S.vendedor && v !== "catalogo") v = "vender";
   VIEWS.forEach(x => $("#v-"+x).hidden = x !== v);
   $$(".tab").forEach(t => { if(t.dataset.tab === v) t.setAttribute("aria-current","page"); else t.removeAttribute("aria-current"); });
   if(v === "vender") setTimeout(() => $("#venQ").focus(), 50);
@@ -565,9 +572,13 @@ $("#invFiltros").addEventListener("click", e => {
   S.filtro = c.dataset.f; S.invLimit = PAGE; $$("#invFiltros .chip").forEach(x => x.classList.toggle("on", x === c)); renderInventario();
 });
 
-function renderVentas(){
+async function renderVentas(){
   const fmt = new Intl.DateTimeFormat("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
-  $("#salesList").innerHTML = S.ventas.length ? S.ventas.map(v => `<div class="sale"><span><b>${Number(v.cantidad)||0}×</b> ${esc(v.nombre||"Producto")}${v.total ? ` · <b>${fmtPrecio(v.total)}</b>` : ""}</span><time>${fmt.format(new Date(v.fecha||0))}</time></div>`).join("") : '<p class="lead" style="padding-bottom:12px">Aún no hay ventas registradas.</p>';
+  let nombres = {};
+  const ids = [...new Set(S.ventas.map(v => v.vendedor).filter(Boolean))];
+  if(ids.length && S.user && S.user.profiles){ try{ nombres = await S.user.profiles(ids); }catch(_){} }
+  const quien = v => { if(!v.vendedor) return ""; if(v.vendedor === S.miId) return "tú"; const pr = nombres[v.vendedor]; return (pr && pr.name) || "otro vendedor"; };
+  $("#salesList").innerHTML = S.ventas.length ? S.ventas.map(v => `<div class="sale"><span><b>${Number(v.cantidad)||0}×</b> ${esc(v.nombre||"Producto")}${v.total ? ` · <b>${fmtPrecio(v.total)}</b>` : ""}${quien(v) ? `<br><small>Vendió: ${esc(quien(v))}</small>` : ""}</span><time>${fmt.format(new Date(v.fecha||0))}</time></div>`).join("") : '<p class="lead" style="padding-bottom:12px">Aún no hay ventas registradas.</p>';
 }
 function renderAll(){ renderStats(); renderInventario(); renderVentasRes(); renderVentas(); renderCatalogo(); if(S.loaded || S.productos.length) renderCarrito(); if(S.nuevo) renderNotices(); }
 
@@ -1114,7 +1125,7 @@ F("tOk").onclick = async () => {
       if(!vend) continue;
       await ref.update({ cantidad: actual - vend, vendidos: (Number(snap.data().vendidos) || 0) + vend, actualizado: Date.now() });
       const pr = precioDe(p);
-      const vRef = await S.db.collection("ventas").add({ ventaId, productoId: p.id, nombre: p.nombre || "Sin nombre", cantidad: vend, precio: pr, total: pr != null ? Math.round(pr * vend * 100) / 100 : null, fecha: Date.now() });
+      const vRef = await S.db.collection("ventas").add({ ventaId, vendedor: S.miId || null, productoId: p.id, nombre: p.nombre || "Sin nombre", cantidad: vend, precio: pr, total: pr != null ? Math.round(pr * vend * 100) / 100 : null, fecha: Date.now() });
       hechos.push({ ref, vRef, vend, total: pr != null ? pr * vend : 0 });
     }
     const piezas = hechos.reduce((a, h) => a + h.vend, 0), total = hechos.reduce((a, h) => a + h.total, 0);
@@ -1395,7 +1406,7 @@ async function migrarMinis(){
 }
 
 /* ---------- boot ---------- */
-function setSync(t){ $("#sync").textContent = t; }
+function setSync(t){ if(S.vendedor && /Guardado/.test(t)) return; $("#sync").textContent = t; }
 function banner(t){ const b = $("#globalBanner"); b.hidden = !t; b.textContent = t || ""; }
 
 function medirCabecera(){
@@ -1415,7 +1426,16 @@ medirCabecera();
   const user = await C.use("user");
   if(user){ try{ S.owner = await user.isOwner(); }catch(_){ S.owner = true; } }
   else S.owner = false;
-  if(!S.owner){ S.visitor = true; document.body.classList.add("visitor"); route(); }
+  if(!S.owner){
+    let edita = false;
+    try{ edita = user ? await user.canEdit() : false; }catch(_){}
+    if(edita){ S.vendedor = true; document.body.classList.add("seller"); }
+    else { S.visitor = true; document.body.classList.add("visitor"); }
+    route();
+  }
+  S.user = user;
+  try{ S.miId = user ? await user.id() : null; }catch(_){ S.miId = null; }
+  if(S.vendedor){ try{ const nm = await user.name(); $("#sync").textContent = nm ? "Vendedor: " + nm : "Vendedor"; }catch(_){} }
   medirCabecera();
   if(!S.visitor) C.use("sample").then(async s => {
     S.sample = s;
@@ -1436,7 +1456,7 @@ medirCabecera();
     if(!snap.metadata.fromCache){ clearTimeout(slow); setSync("Guardado en la nube"); S.loaded = true; }
     S.productos = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
     programarRender();
-    if(S.loaded && !S.visitor) setTimeout(migrarMinis, 2500);
+    if(S.loaded && S.owner) setTimeout(migrarMinis, 2500);
   }, e => { clearTimeout(slow); setSync("Error de conexión"); banner("Se perdió la conexión con el inventario (" + e.code + "). Recarga la página."); });
   db.doc("config/catalogo").onSnapshot(snap => { S.cfg = Object.assign({ titulo:"", contacto:"" }, snap.exists ? snap.data() : {}); renderCatalogo(); }, () => {});
   if(!S.visitor) db.collection("ventas").orderBy("fecha","desc").limit(60).onSnapshot(snap => {
