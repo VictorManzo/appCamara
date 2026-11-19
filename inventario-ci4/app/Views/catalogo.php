@@ -5,9 +5,6 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
 ?>
 <?= view('_cabeza', ['titulo' => 'Catálogo · Juguetería PETUS']) ?>
 <body style="background:#eceef1">
-<div style="max-width:1180px;margin:0 auto;padding:10px max(16px,env(safe-area-inset-left,0px)) 0;display:flex;justify-content:flex-end;font-family:Barlow,system-ui,sans-serif;font-size:13px">
-  <a href="<?= site_url($logueado ? 'panel' : 'entrar') ?>" style="color:#5b636d"><?= $logueado ? 'Volver al panel' : 'Entrar' ?></a>
-</div>
 <div class="petus-cat" id="petusCat">
 <style>
 .petus-cat{--bg:#eceef1;--surface:#fff;--surface-2:#f5f6f8;--ink:#15181c;--muted:#5b636d;--line:#d6dae0;--accent:#e8550f;--blister:#1846c4;--flame:#ffb21a;--ok:#17804a;--danger:#c0352a;
