@@ -1,0 +1,5 @@
+# Solo fotos: nunca ejecutar scripts ni listar la carpeta
+Options -Indexes
+<FilesMatch "\.(php|phtml|phar|pl|py|cgi|sh)$">
+    Require all denied
+</FilesMatch>

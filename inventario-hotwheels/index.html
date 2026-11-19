@@ -401,6 +401,7 @@ body.seller .owner-only,body.seller .tab[data-tab="inventario"],body.seller .tab
     <div class="owner-bar owner-only">
       <a class="btn ghost" href="#inventario">← Volver al inventario</a>
       <button class="btn ghost" id="catEdit" type="button">Editar portada</button>
+      <button class="btn ghost" id="catZip" type="button">Exportar para mi sitio (ZIP)</button>
       <button class="btn primary" id="copyCat2" type="button">Copiar liga</button>
     </div>
     <header class="cat-hero">
@@ -1355,6 +1356,49 @@ async function descargarPDF(){
   }
 }
 F("catPdf").onclick = descargarPDF;
+
+/* ---------- Exportar todo a un ZIP para la versión CodeIgniter ----------
+   productos.json (todos los datos) + fotos/<id>.jpg (foto completa de cada producto). */
+let exportando = false;
+async function exportarZip(){
+  if(exportando || !S.owner) return;
+  const dl = window.claude && await window.claude.use("downloads");
+  if(!dl){ toast("La descarga no está disponible en esta vista."); return; }
+  const btn = F("catZip"); exportando = true; btn.disabled = true;
+  const label = t => btn.innerHTML = '<span class="spin"></span> ' + t;
+  try{
+    label("Preparando…");
+    if(!window.JSZip) await cargarScript("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+    const zip = new window.JSZip();
+    const prods = S.productos.slice();
+    const datos = prods.map(p => ({ id:p.id, nombre:p.nombre||"", serie:p.serie||"", numero:p.numero||"", color:p.color||"", anio:p.anio||"",
+      precio:precioDe(p), precioAntes:antesDe(p), cantidad:cant(p), vendidos:Number(p.vendidos)||0, creado:p.creado||0,
+      esHotWheels:p.esHotWheels !== false, dueno:duenoDe(p), notas:p.notas||"", archivo: p.foto ? "fotos/" + p.id + ".jpg" : "" }));
+    let i = 0, hechos = 0;
+    await Promise.all(Array.from({length:6}, async () => {
+      while(i < prods.length){
+        const k = i++, p = prods[k];
+        if(p.foto){
+          try{ const r = await fetch(blob(p.foto)); if(r.ok) zip.file("fotos/" + p.id + ".jpg", await r.arrayBuffer()); else datos[k].archivo = ""; }
+          catch(_){ datos[k].archivo = ""; }
+        }
+        hechos++; if(hechos % 10 === 0) label(`Empaquetando fotos ${hechos}/${prods.length}…`);
+      }
+    }));
+    zip.file("productos.json", JSON.stringify({ version:1, fecha:Date.now(), contacto:S.cfg.contacto||"", productos:datos }));
+    label("Comprimiendo…");
+    const data = await zip.generateAsync({ type:"blob", compression:"STORE" });
+    label("Guardando…");
+    await dl.save({ filename: "inventario-petus.zip", data });
+    toast("Listo. Sube inventario-petus.zip en la página Importar de tu sitio.");
+  }catch(e){
+    const c = e && e.code;
+    toast(c === "declined" ? "Descarga cancelada." : "No se pudo crear el ZIP" + (c ? " (" + c + ")" : "") + ".");
+  }finally{
+    exportando = false; btn.disabled = false; btn.textContent = "Exportar para mi sitio (ZIP)";
+  }
+}
+F("catZip").onclick = exportarZip;
 
 
 function copiarLiga(){
