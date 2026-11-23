@@ -36,8 +36,8 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     $r->get('jornada', 'Jornadas::actual', ['filter' => 'auth']);
     $r->post('jornada/abrir', 'Jornadas::abrir', ['filter' => 'auth']);
     $r->post('jornada/cerrar', 'Jornadas::cerrar', ['filter' => 'auth']);
-    $r->get('jornadas', 'Jornadas::historial', ['filter' => 'auth']);
-    $r->get('jornadas/(:num)', 'Jornadas::detalle/$1', ['filter' => 'auth']);
+    $r->get('jornadas', 'Jornadas::historial', ['filter' => 'auth:admin']);
+    $r->get('jornadas/(:num)', 'Jornadas::detalle/$1', ['filter' => 'auth:admin']);
 
     $r->get('usuarios', 'Usuarios::index', ['filter' => 'auth:admin']);
     $r->post('usuarios', 'Usuarios::crear', ['filter' => 'auth:admin']);

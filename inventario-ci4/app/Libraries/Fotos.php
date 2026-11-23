@@ -47,7 +47,45 @@ class Fotos
         }
         $m->save($dir . $mini, 78);
 
-        return ['foto' => $foto, 'mini' => $mini];
+        return ['foto' => $foto, 'mini' => $mini, 'huella' => self::huella($dir . $mini)];
+    }
+
+    /**
+     * dHash de 64 bits: la imagen se reduce a 9×8 en grises y cada bit dice si un píxel es
+     * más claro que el de su derecha. Fotos del mismo producto dan huellas parecidas
+     * (pocos bits distintos). El navegador calcula la misma huella en panel.js.
+     */
+    public static function huella(string $ruta): ?string
+    {
+        $src = @imagecreatefromstring((string) @file_get_contents($ruta));
+        if (! $src) {
+            return null;
+        }
+        $t = imagecreatetruecolor(9, 8);
+        imagecopyresampled($t, $src, 0, 0, 0, 0, 9, 8, imagesx($src), imagesy($src));
+        $bits = '';
+        for ($y = 0; $y < 8; $y++) {
+            $fila = [];
+            for ($x = 0; $x < 9; $x++) {
+                $c = imagecolorat($t, $x, $y);
+                $fila[] = 0.299 * (($c >> 16) & 255) + 0.587 * (($c >> 8) & 255) + 0.114 * ($c & 255);
+            }
+            for ($x = 0; $x < 8; $x++) {
+                $bits .= $fila[$x] < $fila[$x + 1] ? '1' : '0';
+            }
+        }
+        imagedestroy($t);
+        imagedestroy($src);
+        $hex = '';
+        foreach (str_split($bits, 4) as $n) {
+            $hex .= dechex(bindec($n));
+        }
+        return $hex;
+    }
+
+    public static function huellaDeArchivo(?string $archivo): ?string
+    {
+        return ($archivo && preg_match('/^[a-f0-9]{24}(_m)?\.jpg$/', $archivo) && is_file(self::dir() . $archivo)) ? self::huella(self::dir() . $archivo) : null;
     }
 
     public static function borrar(?string ...$archivos): void

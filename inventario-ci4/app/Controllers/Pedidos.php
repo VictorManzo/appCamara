@@ -65,12 +65,15 @@ class Pedidos extends BaseController
             'estado' => 'nuevo', 'ip' => $ip, 'created_at' => date('Y-m-d H:i:s'),
         ]);
 
-        $texto = self::textoPedido($codigo, $cliente, $telefono, $nota, $items, $total, $sinPrecio);
+        $texto = self::textoPedido($codigo, $cliente, $telefono, $nota, $items, $total, $sinPrecio, true);
         Avisos::enviar('Pedido ' . $codigo . ' de ' . $cliente . ' · ' . self::dinero($total), $texto);
+        // lo que ve el cliente no lleva la letra del dueño
+        $paraCliente = self::textoPedido($codigo, $cliente, $telefono, $nota, $items, $total, $sinPrecio, false);
+        $itemsCliente = array_map(static function ($it) { unset($it['dueno']); return $it; }, $items);
 
         return $this->response->setJSON([
             'ok' => true, 'codigo' => $codigo, 'total' => round($total, 2), 'sinPrecio' => $sinPrecio,
-            'items' => $items, 'whatsapp' => Avisos::enlaceWhatsApp($texto),
+            'items' => $itemsCliente, 'whatsapp' => Avisos::enlaceWhatsApp($paraCliente),
         ]);
     }
 
@@ -153,7 +156,7 @@ class Pedidos extends BaseController
         return '$' . number_format($v, $v == floor($v) ? 0 : 2);
     }
 
-    private static function textoPedido(string $codigo, string $cliente, string $tel, string $nota, array $items, float $total, int $sinPrecio): string
+    private static function textoPedido(string $codigo, string $cliente, string $tel, string $nota, array $items, float $total, int $sinPrecio, bool $conDueno): string
     {
         $l = ["🛒 Pedido {$codigo} · Juguetería PETUS", '', "Cliente: {$cliente}", "Teléfono: {$tel}"];
         if ($nota !== '') {
@@ -162,7 +165,7 @@ class Pedidos extends BaseController
         $l[] = '';
         foreach ($items as $it) {
             $sub = $it['precio'] !== null ? self::dinero($it['precio'] * $it['cantidad']) : 'precio a consultar';
-            $l[] = "• {$it['cantidad']} × {$it['nombre']}" . ($it['numero'] ? " ({$it['numero']})" : '') . " [{$it['dueno']}] — {$sub}";
+            $l[] = "• {$it['cantidad']} × {$it['nombre']}" . ($it['numero'] ? " ({$it['numero']})" : '') . ($conDueno ? " [{$it['dueno']}]" : '') . " — {$sub}";
         }
         $l[] = '';
         $l[] = 'Total: ' . self::dinero($total) . ($sinPrecio ? " + {$sinPrecio} producto(s) con precio a consultar" : '');

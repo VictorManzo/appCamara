@@ -17,7 +17,9 @@ class Catalogo extends BaseController
                 ->where('cantidad >', 0)->where('pendiente', 0)->where('nombre !=', '')
                 ->orderBy('created_at', 'DESC')->findAll();
             foreach ($filas as $f) {
-                $productos[] = ProductoModel::aJson($f, false);
+                $p = ProductoModel::aJson($f, false);
+                unset($p['dueno'], $p['huella']);
+                $productos[] = $p;
             }
             $contacto = (new AjusteModel())->leer('contacto');
         } catch (\Throwable $e) {

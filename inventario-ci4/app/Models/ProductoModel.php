@@ -12,7 +12,7 @@ class ProductoModel extends Model
     protected $useTimestamps = true;
     protected $allowedFields = [
         'origen_id', 'nombre', 'pendiente', 'serie', 'numero', 'color', 'anio', 'cantidad',
-        'precio', 'precio_antes', 'dueno', 'notas', 'foto', 'mini', 'es_hot_wheels', 'vendidos',
+        'precio', 'precio_antes', 'dueno', 'notas', 'foto', 'mini', 'huella', 'es_hot_wheels', 'vendidos',
         'created_at', 'updated_at',
     ];
 
@@ -39,6 +39,7 @@ class ProductoModel extends Model
             'esHotWheels' => (bool) $p['es_hot_wheels'],
             'vendidos'    => (int) $p['vendidos'],
             'creado'      => $p['created_at'] ? strtotime($p['created_at']) * 1000 : 0,
+            'huella'      => $p['huella'] ?? null,
         ];
         if ($conNotas) {
             $out['notas'] = (string) ($p['notas'] ?? '');

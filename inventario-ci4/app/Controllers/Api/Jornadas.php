@@ -83,6 +83,7 @@ class Jornadas extends BaseController
                 'id' => (int) $j['id'], 'vendedor' => $j['vendedor'] ?: 'Usuario eliminado', 'usuarioId' => (int) $j['usuario_id'],
                 'fondo' => (float) $j['fondo'], 'inicio' => strtotime($j['inicio']) * 1000, 'fin' => $j['fin'] ? strtotime($j['fin']) * 1000 : null,
                 'total' => (float) $j['total_ventas'], 'piezas' => (int) $j['piezas'], 'numVentas' => (int) $j['num_ventas'], 'estado' => $j['estado'],
+                'porDueno' => self::porDueno((int) $j['id']),
             ];
         }
         return $this->response->setJSON($out);
@@ -112,6 +113,20 @@ class Jornadas extends BaseController
             ->orderBy('id', 'DESC')->get(1)->getRowArray() ?: null;
     }
 
+    /** Lo vendido de cada dueño en la jornada: ['L' => 0.0, 'V' => 0.0]. */
+    public static function porDueno(int $jid): array
+    {
+        $out = ['L' => 0.0, 'V' => 0.0];
+        $filas = db_connect()->table('ventas v')
+            ->select("COALESCE(v.dueno, p.dueno, 'V') AS d, COALESCE(SUM(v.total),0) AS t, COALESCE(SUM(v.cantidad),0) AS n", false)
+            ->join('productos p', 'p.id = v.producto_id', 'left')
+            ->where('v.jornada_id', $jid)->groupBy("COALESCE(v.dueno, p.dueno, 'V')", false)->get()->getResultArray();
+        foreach ($filas as $f) {
+            $out[$f['d'] === 'L' ? 'L' : 'V'] += round((float) $f['t'], 2);
+        }
+        return $out;
+    }
+
     private static function totales(int $jid): array
     {
         $r = db_connect()->table('ventas')->select('COALESCE(SUM(total),0) AS total, COALESCE(SUM(cantidad),0) AS piezas, COUNT(DISTINCT grupo) AS num')
@@ -127,6 +142,7 @@ class Jornadas extends BaseController
             'id' => (int) $j['id'], 'fondo' => (float) $j['fondo'],
             'inicio' => strtotime($j['inicio']) * 1000, 'fin' => $j['fin'] ? strtotime($j['fin']) * 1000 : null,
             'estado' => $j['estado'], 'total' => $t['total'], 'piezas' => $t['piezas'], 'numVentas' => $t['numVentas'],
+            'porDueno' => self::porDueno((int) $j['id']),
             'ventas' => array_map(static fn ($v) => [
                 'id' => (int) $v['id'], 'grupo' => $v['grupo'], 'nombre' => $v['nombre'], 'cantidad' => (int) $v['cantidad'],
                 'precio' => $v['precio'] !== null ? (float) $v['precio'] : null, 'total' => $v['total'] !== null ? (float) $v['total'] : null,
@@ -149,6 +165,8 @@ class Jornadas extends BaseController
             'Inicio: ' . $h($j['inicio']), 'Fin: ' . $h($j['fin']), '',
             "Ventas: {$j['numVentas']} · Piezas: {$j['piezas']}",
             'Vendido: ' . self::dinero($j['total']),
+            '   De Lupita (L): ' . self::dinero($j['porDueno']['L']),
+            '   De Victor (V): ' . self::dinero($j['porDueno']['V']),
             'Cambio con el que empezó: ' . self::dinero($j['fondo']),
             'Total que debe entregar: ' . self::dinero($j['total'] + $j['fondo']),
         ];

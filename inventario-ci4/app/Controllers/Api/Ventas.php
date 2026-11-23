@@ -60,7 +60,7 @@ class Ventas extends BaseController
         foreach ($items as $id => $n) {
             // FOR UPDATE: evita que dos vendedores vendan la misma última pieza a la vez.
             $bloqueo = $db->DBDriver === 'MySQLi' ? ' FOR UPDATE' : '';
-            $p = $db->query('SELECT id, nombre, cantidad, precio FROM productos WHERE id = ?' . $bloqueo, [$id])->getRowArray();
+            $p = $db->query('SELECT id, nombre, cantidad, precio, dueno FROM productos WHERE id = ?' . $bloqueo, [$id])->getRowArray();
             if (! $p) {
                 continue;
             }
@@ -78,6 +78,7 @@ class Ventas extends BaseController
                 'grupo' => $grupo, 'producto_id' => $id, 'nombre' => $p['nombre'] ?: 'Sin nombre', 'cantidad' => $vend,
                 'precio' => $precio, 'total' => $sub, 'usuario_id' => $usuario ?: null, 'created_at' => $ahora,
                 'jornada_id' => (int) $jornada['id'],
+                'dueno'      => $p['dueno'] === 'L' ? 'L' : 'V',
             ]);
             $piezas += $vend; $total += (float) $sub;
         }

@@ -167,6 +167,7 @@ const HORA = new Intl.DateTimeFormat("es-MX",{hour:"2-digit",minute:"2-digit"});
 const DIA = new Intl.DateTimeFormat("es-MX",{weekday:"long",day:"numeric",month:"long"});
 const DIAC = new Intl.DateTimeFormat("es-MX",{weekday:"short",day:"numeric",month:"short"});
 const money = v => fmtPrecio(Number(v) || 0) || "$0";
+const duenos = j => j && j.porDueno ? `<div class="jor-nums jor-own"><div><span>De Lupita (L)</span><b>${money(j.porDueno.L)}</b></div><div><span>De Victor (V)</span><b>${money(j.porDueno.V)}</b></div></div>` : "";
 function renderJornada(){
   const j = S.jornada;
   F("jorSin").hidden = !!j; F("jorCon").hidden = !j;
@@ -219,6 +220,7 @@ F("jorFin").onclick = async () => {
   const panel = openSheet(`<h2>Finalizar jornada</h2>
     <p class="lead">${esc(P.yo.nombre)} · ${DIA.format(new Date(j.inicio))}, desde ${HORA.format(new Date(j.inicio))}</p>
     <div class="jor-nums"><div><span>Cambio</span><b>${money(j.fondo)}</b></div><div><span>Vendido</span><b>${money(j.total)}</b></div><div><span>En caja</span><b>${money(j.total + j.fondo)}</b></div></div>
+    ${duenos(j)}
     <p class="lead">${j.numVentas} venta${j.numVentas === 1 ? "" : "s"} · ${j.piezas} pieza${j.piezas === 1 ? "" : "s"}. Cuenta el dinero: deben ser <b>${money(j.fondo)}</b> de cambio más <b>${money(j.total)}</b> de lo vendido.</p>
     ${S.carrito.length ? '<div class="notice warn"><p>Tienes una venta sin registrar en “Venta actual”. Regístrala o cancélala antes de finalizar.</p></div>' : ""}
     <p class="q">¿Seguro que quieres finalizar tu jornada?</p>
@@ -234,6 +236,7 @@ F("jorFin").onclick = async () => {
       const jj = r.jornada;
       openSheet(`<h2>Jornada finalizada</h2>
         <div class="jor-nums"><div><span>Cambio</span><b>${money(jj.fondo)}</b></div><div><span>Vendido</span><b>${money(jj.total)}</b></div><div><span>Entrega</span><b>${money(jj.total + jj.fondo)}</b></div></div>
+        ${duenos(jj)}
         <p class="lead">${aviso}</p>
         <a class="btn primary block" href="${P.base}salir">Salir</a>
         <button class="btn ghost block" type="button" id="finNueva">Iniciar otra jornada</button>`);
@@ -256,7 +259,8 @@ async function abrirHistorial(){
     <div class="t-total"><span>Total vendido en el periodo</span><b style="font-size:26px">${money(totalPer)}</b></div>
     ${Object.keys(dias).length ? Object.keys(dias).map(k => {
       const js = dias[k], sum = js.reduce((a, j) => a + j.total, 0);
-      return `<div class="hist-day"><b>${DIA.format(new Date(js[0].inicio))}</b><span>${money(sum)}</span></div>` + js.map(j => `
+      const sL = js.reduce((a, j) => a + (j.porDueno ? j.porDueno.L : 0), 0), sV = js.reduce((a, j) => a + (j.porDueno ? j.porDueno.V : 0), 0);
+      return `<div class="hist-day"><b>${DIA.format(new Date(js[0].inicio))}</b><span>${money(sum)}</span></div><p class="lead" style="font-size:13px;margin:0">Lupita ${money(sL)} · Victor ${money(sV)}</p>` + js.map(j => `
         <button class="hist-row" type="button" data-j="${j.id}">
           <span><b>${esc(j.vendedor)}</b><br><small>${HORA.format(new Date(j.inicio))} – ${j.fin ? HORA.format(new Date(j.fin)) : "abierta"} · ${j.piezas} pieza${j.piezas === 1 ? "" : "s"}</small></span>
           <span class="r">${money(j.total)}<small>cambio ${money(j.fondo)}</small></span>
@@ -272,6 +276,7 @@ async function verJornada(id){
   openSheet(`<h2>${esc(j.vendedor)}</h2>
     <p class="lead">${DIA.format(new Date(j.inicio))} · ${HORA.format(new Date(j.inicio))} – ${j.fin ? HORA.format(new Date(j.fin)) : "abierta"}</p>
     <div class="jor-nums"><div><span>Cambio</span><b>${money(j.fondo)}</b></div><div><span>Vendido</span><b>${money(j.total)}</b></div><div><span>En caja</span><b>${money(j.total + j.fondo)}</b></div></div>
+    ${duenos(j)}
     <p class="lead">${j.numVentas} venta${j.numVentas === 1 ? "" : "s"} · ${j.piezas} pieza${j.piezas === 1 ? "" : "s"}</p>
     <div>${j.ventas.map(v => `<div class="sale"><span><b>${v.cantidad}×</b> ${esc(v.nombre)}${v.total ? ` · <b>${fmtPrecio(v.total)}</b>` : ""}</span><time>${HORA.format(new Date(v.fecha))}</time></div>`).join("") || '<p class="lead">Sin ventas.</p>'}</div>
     <div class="row"><button class="btn ghost" type="button" id="jvBack">Volver al historial</button><button class="btn text" type="button" id="jvClose">Cerrar</button></div>`);
@@ -421,7 +426,7 @@ const FIELDS = ["fNombre","fPrecio","fSerie","fNumero","fColor","fAnio","fNotas"
     iniciarNuevo(b);
     // propone recortar al producto en cuanto se toma la foto
     const url = URL.createObjectURL(b); const c = await abrirRecortador(url, null); URL.revokeObjectURL(url);
-    if(c) aplicarRecorte(S.nuevo, c);
+    if(c) aplicarRecorte(S.nuevo, c); else buscarPorFoto(S.nuevo);
     F("fNombre").focus();
   }
   F("camIn").addEventListener("change", onPick);
@@ -440,9 +445,61 @@ const FIELDS = ["fNombre","fPrecio","fSerie","fNumero","fColor","fAnio","fNotas"
   F("addForm").addEventListener("submit", e => { e.preventDefault(); guardarNuevo(false); });
   F("addPend").onclick = () => guardarNuevo(true);
 }
+/* Huella de la foto: dHash de 64 bits. Se compara con las huellas guardadas para
+   reconocer un producto que ya existe y rellenar sus datos. No usa servicios externos. */
+async function huellaDe(blob){
+  const img = await decode(blob);
+  const k = Math.min(1, 420 / Math.max(img.width, img.height));
+  const a = document.createElement("canvas"); a.width = Math.max(1, Math.round(img.width*k)); a.height = Math.max(1, Math.round(img.height*k));
+  const ga = a.getContext("2d"); ga.imageSmoothingQuality = "high"; ga.drawImage(img, 0, 0, a.width, a.height);
+  const c = document.createElement("canvas"); c.width = 9; c.height = 8;
+  const g = c.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(a, 0, 0, 9, 8);
+  const d = g.getImageData(0, 0, 9, 8).data;
+  let bits = "";
+  for(let y = 0; y < 8; y++){
+    const fila = [];
+    for(let x = 0; x < 9; x++){ const i = (y*9 + x) * 4; fila.push(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]); }
+    for(let x = 0; x < 8; x++) bits += fila[x] < fila[x+1] ? "1" : "0";
+  }
+  let hex = ""; for(let i = 0; i < 64; i += 4) hex += parseInt(bits.slice(i, i+4), 2).toString(16);
+  return hex;
+}
+function distancia(a, b){
+  let d = 0;
+  for(let i = 0; i < 16; i++){ let x = parseInt(a[i], 16) ^ parseInt(b[i], 16); while(x){ d += x & 1; x >>= 1; } }
+  return d;
+}
+const PARECIDO = 10;     // hasta 10 de 64 bits distintos: probablemente el mismo producto
+async function buscarPorFoto(n){
+  if(!n || !n.blob) return;
+  let h; try{ h = await huellaDe(n.blob); }catch(_){ return; }
+  if(S.nuevo !== n) return;
+  n.huella = h;
+  const cands = S.productos.filter(p => p.huella && p.huella.length === 16)
+    .map(p => ({ p, d: distancia(h, p.huella) })).filter(x => x.d <= PARECIDO).sort((a, b) => a.d - b.d).slice(0, 3);
+  n.parecidos = cands; n.fotoMatch = null;
+  if(cands.length && !n.rechazados.includes(cands[0].p.id) && !F("fNombre").value.trim()) rellenarDesde(n, cands[0].p);
+  renderNotices();
+}
+function rellenarDesde(n, p){
+  n.fotoMatch = p.id;
+  F("fNombre").value = p.nombre || ""; F("fSerie").value = p.serie || ""; F("fNumero").value = p.numero || "";
+  F("fColor").value = p.color || ""; F("fAnio").value = p.anio || ""; F("fPrecio").value = precioDe(p) ?? "";
+  F("fHW").value = p.esHotWheels === false ? "0" : "1";
+  const r = $(`input[name="fDueno"][value="${duenoDe(p)}"]`); if(r) r.checked = true;
+  checkLocalDup();
+}
+function deshacerRelleno(n){
+  const p = byId(n.fotoMatch);
+  if(p) n.rechazados.push(p.id);
+  n.fotoMatch = null; n.dupId = null; n.varianteId = null;
+  ["fNombre","fSerie","fNumero","fColor","fAnio","fPrecio"].forEach(f => F(f).value = "");
+  renderNotices(); F("fNombre").focus();
+}
+
 function iniciarNuevo(b){
   if(S.nuevo && S.nuevo.url) URL.revokeObjectURL(S.nuevo.url);
-  S.nuevo = { orig:b, blob:b, crop:null, url: b ? URL.createObjectURL(b) : null, dupId:null, dupDecision:null, varianteId:null };
+  S.nuevo = { orig:b, blob:b, crop:null, url: b ? URL.createObjectURL(b) : null, dupId:null, dupDecision:null, varianteId:null, parecidos:[], fotoMatch:null, rechazados:[] };
   FIELDS.forEach(f => F(f).value = ""); F("fCant").value = 1; F("fHW").value = "1";
   let ultimo = null; try{ ultimo = localStorage.getItem("petusDueno"); }catch(_){}
   const r = $(`input[name="fDueno"][value="${ultimo === "L" ? "L" : "V"}"]`); if(r) r.checked = true;
@@ -458,6 +515,7 @@ async function aplicarRecorte(n, c){
     n.blob = b; n.crop = c;
     if(n.url) URL.revokeObjectURL(n.url);
     n.url = URL.createObjectURL(b); F("addImg").src = n.url; renderCropBar();
+    buscarPorFoto(n);
   }catch(_){ toast("No se pudo recortar la foto."); }
 }
 function renderCropBar(){ const n = S.nuevo; if(!n) return; F("cropTxt").textContent = n.crop ? "Recortada al producto." : "Foto completa."; F("cropFull").hidden = !n.crop; }
@@ -480,6 +538,15 @@ function checkLocalDup(){
 function renderNotices(){
   const n = S.nuevo; if(!n) return;
   const out = [];
+  const fm = n.fotoMatch && byId(n.fotoMatch);
+  if(fm){
+    out.push(`<div class="notice warn"><h3>Reconocí la foto</h3><p>Se parece a un producto que ya tienes; llené sus datos. Revísalos.</p>
+      <div class="match">${thumb(fm)}<div><b>${esc(fm.nombre)}</b><small>${meta(fm) || ""} · existencia ×${cant(fm)}</small></div></div>
+      <div class="row"><button type="button" class="btn ghost" id="fmNo">No es este</button></div></div>`);
+  } else if(n.parecidos && n.parecidos.length && !F("fNombre").value.trim()){
+    const libres = n.parecidos.filter(x => !n.rechazados.includes(x.p.id));
+    if(libres.length) out.push(`<div class="notice warn"><h3>¿Es alguno de estos?</h3>${libres.map(x => `<button type="button" class="match" data-fm="${x.p.id}" style="border:0;width:100%;cursor:pointer;text-align:left">${thumb(x.p)}<div><b>${esc(x.p.nombre)}</b><small>${meta(x.p) || ""}</small></div></button>`).join("")}</div>`);
+  }
   const d = n.dupId && byId(n.dupId);
   if(d && n.dupDecision !== "distinto"){
     out.push(`<div class="notice dup"><h3>Parece repetido</h3><p>Ya tienes un producto con el mismo nombre${F("fNumero").value.trim() ? " y número" : ""}:</p>
@@ -490,6 +557,8 @@ function renderNotices(){
     out.push(`<div class="notice warn"><h3>Mismo nombre, otra versión</h3><p>Ya tienes “${esc(v.nombre)}” (${meta(v) || "sin detalles"}, ×${cant(v)}), pero con otro número o serie. Se guardará como producto aparte.</p><div class="row"><button type="button" class="btn ghost" id="varSame">En realidad es el mismo: sumar</button></div></div>`);
   }
   F("addNotices").innerHTML = out.join("");
+  if(F("fmNo")) F("fmNo").onclick = () => deshacerRelleno(n);
+  $$("[data-fm]", F("addNotices")).forEach(b => b.onclick = () => rellenarDesde(n, byId(b.dataset.fm)));
   if(F("dupSame")) F("dupSame").onclick = () => sumarExistente(n.dupId);
   if(F("dupDiff")) F("dupDiff").onclick = () => { n.dupDecision = "distinto"; renderNotices(); };
   if(F("varSame")) F("varSame").onclick = () => sumarExistente(n.varianteId);
@@ -527,11 +596,11 @@ async function guardarNuevo(sinNombre){
 /* ---------- vender ---------- */
 function renderVentasRes(){
   const q = F("venQ").value.trim();
-  const list = q ? search(q) : [];
+  const list = q ? search(q).filter(p => cant(p) > 0) : [];
   F("venNone").hidden = !(q && !list.length);
   F("venNoneTxt").textContent = `No encontré “${q}”`;
   F("venRes").innerHTML = list.slice(0, 30).map(p => `
-    <button class="item" data-id="${p.id}">${thumb(p)}<div class="info"><div class="name">${ownTag(p)} ${esc(p.nombre || "Sin nombre")}</div><div class="meta">${precioDe(p) != null ? `<span class="price">${fmtPrecio(precioDe(p))}</span> · ` : ""}${meta(p) || "&nbsp;"}</div></div><span class="qty ${cant(p)===0?"zero":""}">×${cant(p)}</span></button>`).join("");
+    <button class="item" data-id="${p.id}">${thumb(p)}<div class="info"><div class="name">${esc(p.nombre || "Sin nombre")}</div><div class="meta">${precioDe(p) != null ? `<span class="price">${fmtPrecio(precioDe(p))}</span> · ` : ""}${meta(p) || "&nbsp;"}</div></div><span class="qty ${cant(p)===0?"zero":""}">×${cant(p)}</span></button>`).join("");
 }
 F("venQ").addEventListener("input", renderVentasRes);
 F("venRes").addEventListener("click", e => { const it = e.target.closest(".item"); if(it) openVenta(it.dataset.id); });
@@ -592,7 +661,7 @@ function renderCarrito(){
     const p = byId(x.id), pr = precioDe(p), sub = pr != null ? pr * x.cant : null;
     piezas += x.cant; if(sub != null) total += sub; else sinPrecio++;
     return `<div class="t-row" data-id="${p.id}">${thumb(p)}
-      <div class="t-info"><div class="t-name">${ownTag(p)} ${esc(p.nombre || "Sin nombre")}</div>
+      <div class="t-info"><div class="t-name">${esc(p.nombre || "Sin nombre")}</div>
         <div class="t-line"><div class="stepper"><button type="button" data-tstep="-1" aria-label="Menos">−</button><input type="number" min="1" max="${cant(p)}" value="${x.cant}" inputmode="numeric" aria-label="Cantidad" data-tq><button type="button" data-tstep="1" aria-label="Más">+</button></div><span>× ${pr != null ? fmtPrecio(pr) : "sin precio"}</span></div></div>
       <div class="t-sub">${sub != null ? fmtPrecio(sub) : "—"}<button type="button" class="t-del" data-tdel>Quitar</button></div>
     </div>`;

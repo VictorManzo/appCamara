@@ -314,3 +314,6 @@ img{max-width:100%}
 .hist-row small{color:var(--muted)}
 .hist-row .r{text-align:right;font-family:var(--f-display);font-weight:700;font-size:20px}
 .hist-row .r small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px}
+.jor-nums.jor-own{grid-template-columns:1fr 1fr}
+.jor-nums.jor-own div:nth-child(1) b{color:#c2185b}
+.jor-nums.jor-own div:nth-child(2) b{color:#0f766e}

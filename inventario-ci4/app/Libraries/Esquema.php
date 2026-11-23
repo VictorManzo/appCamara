@@ -18,7 +18,8 @@ class Esquema
         self::$listo = true;
         try {
             $db = db_connect();
-            if ($db->tableExists('usuarios') && (! $db->tableExists('pedidos') || ! $db->tableExists('jornadas'))) {
+            if ($db->tableExists('usuarios') && (! $db->tableExists('pedidos') || ! $db->tableExists('jornadas')
+                || ! $db->fieldExists('huella', 'productos') || ! $db->fieldExists('dueno', 'ventas'))) {
                 service('migrations')->setNamespace('App')->latest();
             }
         } catch (\Throwable $e) {

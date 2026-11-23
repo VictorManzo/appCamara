@@ -130,7 +130,7 @@
         </details>
         <button class="btn dark block" id="jorFin" type="button">Finalizar jornada</button>
       </div>
-      <button class="btn ghost block" id="jorHist" type="button">Historial de ventas por día</button>
+      <button class="btn ghost block owner-only" id="jorHist" type="button">Historial de ventas por día</button>
     </section>
   </section>
 </main>
@@ -154,6 +154,6 @@ window.PETUS = <?= json_encode([
     'contacto' => $contacto,
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
 </script>
-<script src="<?= base_url('assets/panel.js') ?>?v=3"></script>
+<script src="<?= base_url('assets/panel.js') ?>?v=4"></script>
 </body>
 </html>

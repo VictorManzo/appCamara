@@ -12,7 +12,22 @@ class Productos extends BaseController
     public function index()
     {
         $esAdmin = session()->get('rol') === 'admin';
-        $filas = (new ProductoModel())->orderBy('created_at', 'DESC')->findAll();
+        \App\Libraries\Esquema::asegurar();
+        $m = new ProductoModel();
+        $filas = $m->orderBy('created_at', 'DESC')->findAll();
+        // calcula poco a poco la huella de las fotos que aún no la tienen
+        $hechas = 0;
+        foreach ($filas as &$f) {
+            if ($hechas < 50 && $f['mini'] && empty($f['huella'])) {
+                $h = Fotos::huellaDeArchivo($f['mini']);
+                if ($h) {
+                    $m->update($f['id'], ['huella' => $h]);
+                    $f['huella'] = $h;
+                }
+                $hechas++;
+            }
+        }
+        unset($f);
         return $this->response->setJSON(array_map(static fn ($p) => ProductoModel::aJson($p, $esAdmin), $filas));
     }
 

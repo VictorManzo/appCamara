@@ -158,7 +158,7 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
   function card(p){
     var pr = precio(p), off = desc(p), st = p.cantidad;
     return '<article class="bl"><div class="band"><span>' + esc(p.serie || (p.hw ? 'Hot Wheels' : 'Coleccionable')) + '</span>' + (p.numero ? '<span class="num">' + esc(p.numero) + '</span>' : '') + '</div>' +
-      '<div class="bubble">' + (off ? '<span class="off">-' + off + '%</span>' : '') + (p.img ? '<img src="' + esc(p.img) + '" alt="' + esc(p.nombre) + '" loading="lazy" decoding="async" width="420" height="420">' : CAR) + '<span class="own own-' + (p.dueno === 'L' ? 'L' : 'V') + '">' + (p.dueno === 'L' ? 'L' : 'V') + '</span></div>' +
+      '<div class="bubble">' + (off ? '<span class="off">-' + off + '%</span>' : '') + (p.img ? '<img src="' + esc(p.img) + '" alt="' + esc(p.nombre) + '" loading="lazy" decoding="async" width="420" height="420">' : CAR) + '</div>' +
       '<div class="body"><div class="name">' + esc(p.nombre) + '</div>' + ([p.color, p.anio].filter(Boolean).length ? '<div class="meta">' + [p.color, p.anio].filter(Boolean).map(esc).join(' · ') + '</div>' : '') +
       '<div class="foot">' + (pr != null ? '<span>' + (antes(p) ? '<span class="was">' + fmt(antes(p)) + '</span>' : '') + '<span class="tag"><b>' + fmt(pr) + '</b></span></span>' : '<span class="tag ask"><b>Precio a consultar</b></span>') +
       '<span class="stock">' + (st === 1 ? 'Última pieza' : st + ' disponibles') + '</span></div>' +
@@ -369,7 +369,6 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
         var bx = x + 3, by = y + 10.5, bw = cw - 6;
         doc.setFillColor(245,246,248); doc.roundedRect(bx, by, bw, imgH, 3, 3, 'F');
         var im = imgs[idx]; if(im){ var k = Math.min((bw - 3) / im.w, (imgH - 3) / im.h), iw = im.w * k, ih = im.h * k; doc.addImage(im.url, 'JPEG', bx + (bw - iw)/2, by + (imgH - ih)/2, iw, ih, undefined, 'FAST'); }
-        var dn = p.dueno === 'L' ? 'L' : 'V'; doc.setFillColor.apply(doc, dn === 'L' ? [194,24,91] : [15,118,110]); doc.circle(bx + bw - 4.5, by + imgH - 4.5, 3.2, 'F'); doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text(dn, bx + bw - 4.5, by + imgH - 3.3, {align:'center'});
         var off = desc(p); if(off){ doc.setFillColor(192,53,42); doc.roundedRect(bx + 1.5, by + 1.5, 13, 5, 2.5, 2.5, 'F'); doc.setTextColor(255,255,255); doc.setFontSize(7); doc.text('-' + off + '%', bx + 8, by + 5, {align:'center'}); }
         doc.setTextColor.apply(doc, INK); doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
         doc.text(doc.splitTextToSize(latin(p.nombre).toUpperCase(), cw - 6).slice(0, 2), x + 3, by + imgH + 5.5);
