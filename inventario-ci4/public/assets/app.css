@@ -205,7 +205,7 @@ body.visitor .tabs,body.visitor .top,body.visitor .owner-only{display:none!impor
 body.visitor::before{background:var(--bg)}
 .seller-only{display:none!important}
 body.seller .seller-only{display:flex!important}
-body.seller .owner-only,body.seller .tab[data-tab="inventario"],body.seller .tab[data-tab="agregar"]{display:none!important}
+body.seller .owner-only,body.seller .tab[data-tab="inventario"]{display:none!important}
 .sale small{color:var(--muted)}
 .who{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 
@@ -292,3 +292,25 @@ img{max-width:100%}
 .cat-page main{padding-bottom:32px}
 .cat-topbar{display:flex;justify-content:flex-end}
 .cat-topbar a{font-size:13px;color:var(--muted)}
+
+/* Jornada de venta */
+.jornada{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.jornada .ticket-head h3{margin:0;font-family:var(--f-display);font-size:22px;text-transform:uppercase}
+.jornada #jorSin{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.jornada #jorCon{display:flex;flex-direction:column;gap:10px}
+.jor-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.jor-nums div{background:var(--surface-2);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.jor-nums span{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.jor-nums b{font-family:var(--f-display);font-size:22px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.jor-nums div:nth-child(2) b{color:var(--accent)}
+.jor-strip{margin:6px 0 0;font-size:14px;font-weight:600;color:var(--ok)}
+.jornada details.sales{border:0;padding:0}
+.choice{display:grid;gap:10px}
+.choice .btn{min-height:64px;font-size:18px}
+.hist-day{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:6px;padding-bottom:4px;border-bottom:2px solid var(--line)}
+.hist-day b{font-family:var(--f-display);font-size:20px;text-transform:uppercase}
+.hist-day span{font-family:var(--f-display);font-size:22px;font-weight:700;color:var(--accent)}
+.hist-row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;text-align:left;width:100%}
+.hist-row small{color:var(--muted)}
+.hist-row .r{text-align:right;font-family:var(--f-display);font-weight:700;font-size:20px}
+.hist-row .r small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px}

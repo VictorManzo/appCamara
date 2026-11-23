@@ -14,6 +14,12 @@ Pensada para **https://bixosdement.com/inventario-hotwheels/**.
 - **Catálogo público** (`/catalogo`): sin cuenta. Portada Juguetería PETUS, buscador fijo,
   filtros (Lo más vendido, Novedades, Descuentos, Precio más bajo/alto, rangos de precio)
   y **PDF descargable**.
+- **Jornadas**: al entrar, cada vendedor indica si lleva cambio (y cuánto) o sin cambio. Sus ventas
+  se suman en "Mi jornada" (cambio, vendido y total en caja por separado). Con **Finalizar jornada**
+  se envía el resumen por Telegram (y correo si está configurado) con el nombre del vendedor.
+  **Historial de ventas por día** con el total de cada día y el detalle de cada jornada.
+- **Vendedores** también pueden **agregar productos** (no editarlos ni borrarlos).
+- **Pedidos del catálogo**: los clientes arman su pedido y te llega por Telegram/correo/WhatsApp.
 - **Usuarios**: tú eres administrador; los vendedores (Jonathan, María Guadalupe) entran con
   su usuario y contraseña y solo ven Vender y el Catálogo.
 - **Importar** el inventario de la app de claude.ai (botón "Exportar para mi sitio (ZIP)").

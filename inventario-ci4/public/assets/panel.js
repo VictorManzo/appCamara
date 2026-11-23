@@ -84,13 +84,14 @@ function stepper(root){
 stepper(document);
 
 /* ---------- routing ---------- */
-const VIEWS = ADMIN ? ["inventario","agregar","vender"] : ["vender"];
+const VIEWS = ADMIN ? ["inventario","agregar","vender"] : ["vender","agregar"];
 function route(){
   let v = location.hash.slice(1);
   if(!VIEWS.includes(v)) v = VIEWS[0];
   ["inventario","agregar","vender"].forEach(x => F("v-"+x).hidden = x !== v);
   $$(".tab").forEach(t => { if(t.dataset.tab === v) t.setAttribute("aria-current","page"); else t.removeAttribute("aria-current"); });
   if(v === "vender") setTimeout(() => F("venQ").focus(), 50);
+  if(v === "vender" && S.jcarg && !S.jornada) pedirInicio(false);
   window.scrollTo(0,0);
 }
 window.addEventListener("hashchange", route);
@@ -111,7 +112,7 @@ async function cargarProductos(){
   }catch(e){ const b = F("globalBanner"); b.hidden = false; b.textContent = errMsg(e); }
 }
 async function cargarVentas(){
-  try{ S.ventas = await api("api/ventas"); renderVentas(); }catch(_){}
+  try{ const r = await api("api/jornada"); S.jornada = r.jornada; renderJornada(); }catch(_){}
 }
 // refresca cada 30 s para ver lo que vendieron otros
 setInterval(() => { if(!document.hidden){ cargarProductos(); cargarVentas(); } }, 30000);
@@ -161,13 +162,123 @@ if(ADMIN){
     S.filtro = c.dataset.f; S.invLimit = PAGE; $$("#invFiltros .chip").forEach(x => x.classList.toggle("on", x === c)); renderInventario();
   });
 }
-function renderVentas(){
-  const fmt = new Intl.DateTimeFormat("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
-  F("salesList").innerHTML = S.ventas.length ? S.ventas.map(v => {
-    const quien = v.usuarioId === P.yo.id ? "tú" : (v.vendedor || "");
-    return `<div class="sale"><span><b>${v.cantidad}×</b> ${esc(v.nombre)}${v.total ? ` · <b>${fmtPrecio(v.total)}</b>` : ""}${quien ? `<br><small>Vendió: ${esc(quien)}</small>` : ""}</span><time>${fmt.format(new Date(v.fecha))}</time></div>`;
-  }).join("") : '<p class="lead" style="padding-bottom:12px">Aún no hay ventas registradas.</p>';
+/* ---------- jornada de venta ---------- */
+const HORA = new Intl.DateTimeFormat("es-MX",{hour:"2-digit",minute:"2-digit"});
+const DIA = new Intl.DateTimeFormat("es-MX",{weekday:"long",day:"numeric",month:"long"});
+const DIAC = new Intl.DateTimeFormat("es-MX",{weekday:"short",day:"numeric",month:"short"});
+const money = v => fmtPrecio(Number(v) || 0) || "$0";
+function renderJornada(){
+  const j = S.jornada;
+  F("jorSin").hidden = !!j; F("jorCon").hidden = !j;
+  F("jorStrip").hidden = !j;
+  if(!j){ F("jorDesde").textContent = ""; return; }
+  const mismoDia = new Date(j.inicio).toDateString() === new Date().toDateString();
+  F("jorDesde").textContent = (mismoDia ? "Hoy" : DIAC.format(new Date(j.inicio))) + " desde " + HORA.format(new Date(j.inicio));
+  F("jorFondo").textContent = money(j.fondo);
+  F("jorTotal").textContent = money(j.total);
+  F("jorCaja").textContent = money(j.total + j.fondo);
+  F("jorPiezas").textContent = `${j.numVentas} venta${j.numVentas === 1 ? "" : "s"} · ${j.piezas} pieza${j.piezas === 1 ? "" : "s"}` + (mismoDia ? "" : " · Esta jornada empezó otro día: finalízala.");
+  F("jorStrip").textContent = `Jornada abierta · vendido ${money(j.total)}`;
+  F("salesList").innerHTML = j.ventas.length ? j.ventas.map(v => `<div class="sale"><span><b>${v.cantidad}×</b> ${esc(v.nombre)}${v.total ? ` · <b>${fmtPrecio(v.total)}</b>` : ""}</span><time>${HORA.format(new Date(v.fecha))}</time></div>`).join("")
+    + `<div class="sale"><span><b>Total vendido</b></span><b>${money(j.total)}</b></div>` : '<p class="lead" style="padding-bottom:12px">Aún no hay ventas en esta jornada.</p>';
 }
+let preguntado = false;
+function pedirInicio(forzar){
+  if(S.jornada || (preguntado && !forzar)) return;
+  preguntado = true;
+  const panel = openSheet(`<h2>Hola, ${esc(P.yo.nombre)}</h2>
+    <p class="q">¿Llevas cambio para empezar la jornada?</p>
+    <div class="choice" id="chIni">
+      <button class="btn primary" type="button" id="chSi">Sí, llevo cambio</button>
+      <button class="btn ghost" type="button" id="chNo">Sin cambio</button>
+    </div>
+    <div class="view" id="chMonto" hidden>
+      <label class="field"><span>¿Cuánto llevas de cambio?</span><div class="money"><span>$</span><input id="chFondo" inputmode="decimal" placeholder="0"></div></label>
+      <button class="btn primary block" type="button" id="chOk">Iniciar jornada</button>
+      <button class="btn text" type="button" id="chBack">Volver</button>
+    </div>
+    ${ADMIN ? '<button class="btn text" type="button" id="chLuego">Ahora no (solo voy a administrar)</button>' : ""}`);
+  const abrir = async fondo => {
+    try{ const r = await api("api/jornada/abrir", { json: { fondo } }); S.jornada = r.jornada; renderJornada(); closeSheet(); toast(fondo > 0 ? `Jornada iniciada con ${money(fondo)} de cambio.` : "Jornada iniciada sin cambio."); }
+    catch(e){ toast(errMsg(e)); }
+  };
+  F("chSi").onclick = () => { F("chIni").hidden = true; F("chMonto").hidden = false; F("chFondo").focus(); };
+  F("chNo").onclick = () => abrir(0);
+  F("chBack").onclick = () => { F("chIni").hidden = false; F("chMonto").hidden = true; };
+  F("chOk").onclick = () => {
+    const v = parsePrecio(F("chFondo").value);
+    if(v == null){ toast("Escribe cuánto llevas de cambio, o elige “Sin cambio”."); return; }
+    abrir(v);
+  };
+  if(F("chLuego")) F("chLuego").onclick = closeSheet;
+}
+F("jorIniciar").onclick = () => pedirInicio(true);
+F("jorFin").onclick = async () => {
+  await cargarVentas();
+  const j = S.jornada; if(!j) return;
+  const panel = openSheet(`<h2>Finalizar jornada</h2>
+    <p class="lead">${esc(P.yo.nombre)} · ${DIA.format(new Date(j.inicio))}, desde ${HORA.format(new Date(j.inicio))}</p>
+    <div class="jor-nums"><div><span>Cambio</span><b>${money(j.fondo)}</b></div><div><span>Vendido</span><b>${money(j.total)}</b></div><div><span>En caja</span><b>${money(j.total + j.fondo)}</b></div></div>
+    <p class="lead">${j.numVentas} venta${j.numVentas === 1 ? "" : "s"} · ${j.piezas} pieza${j.piezas === 1 ? "" : "s"}. Cuenta el dinero: deben ser <b>${money(j.fondo)}</b> de cambio más <b>${money(j.total)}</b> de lo vendido.</p>
+    ${S.carrito.length ? '<div class="notice warn"><p>Tienes una venta sin registrar en “Venta actual”. Regístrala o cancélala antes de finalizar.</p></div>' : ""}
+    <p class="q">¿Seguro que quieres finalizar tu jornada?</p>
+    <div class="row"><button class="btn ghost" type="button" id="finNo">No, seguir vendiendo</button><button class="btn dark" type="button" id="finSi">Sí, finalizar</button></div>`);
+  F("finNo").onclick = closeSheet;
+  F("finSi").onclick = async () => {
+    F("finSi").disabled = true; F("finSi").textContent = "Finalizando…";
+    try{
+      const r = await api("api/jornada/cerrar", { json: {} });
+      S.jornada = null; preguntado = true; renderJornada();
+      const tg = r.avisos && r.avisos.telegram, em = r.avisos && r.avisos.email;
+      const aviso = tg ? "Se envió el resumen por Telegram." : (tg === false ? "No se pudo enviar el aviso por Telegram (revisa Avisos de pedidos)." : (em ? "Se envió el resumen por correo." : "Quedó guardada en el historial."));
+      const jj = r.jornada;
+      openSheet(`<h2>Jornada finalizada</h2>
+        <div class="jor-nums"><div><span>Cambio</span><b>${money(jj.fondo)}</b></div><div><span>Vendido</span><b>${money(jj.total)}</b></div><div><span>Entrega</span><b>${money(jj.total + jj.fondo)}</b></div></div>
+        <p class="lead">${aviso}</p>
+        <a class="btn primary block" href="${P.base}salir">Salir</a>
+        <button class="btn ghost block" type="button" id="finNueva">Iniciar otra jornada</button>`);
+      F("finNueva").onclick = () => pedirInicio(true);
+    }catch(e){ toast(errMsg(e)); F("finSi").disabled = false; F("finSi").textContent = "Sí, finalizar"; }
+  };
+};
+
+/* ---------- historial por día ---------- */
+let histDias = 7;
+async function abrirHistorial(){
+  let lista;
+  try{ lista = await api("api/jornadas?dias=" + histDias); }catch(e){ toast(errMsg(e)); return; }
+  const dias = {};
+  lista.forEach(j => { const k = new Date(j.inicio).toDateString(); (dias[k] = dias[k] || []).push(j); });
+  const totalPer = lista.reduce((a, j) => a + j.total, 0);
+  const panel = openSheet(`<h2>Historial de ventas</h2>
+    <p class="lead">${ADMIN ? "Todas las jornadas de todos los vendedores." : "Tus jornadas."} Toca una para ver sus ventas.</p>
+    <div class="chips">${[7,31,90].map(d => `<button class="chip${d === histDias ? " on" : ""}" data-dias="${d}" type="button">${d === 7 ? "7 días" : d === 31 ? "Mes" : "3 meses"}</button>`).join("")}</div>
+    <div class="t-total"><span>Total vendido en el periodo</span><b style="font-size:26px">${money(totalPer)}</b></div>
+    ${Object.keys(dias).length ? Object.keys(dias).map(k => {
+      const js = dias[k], sum = js.reduce((a, j) => a + j.total, 0);
+      return `<div class="hist-day"><b>${DIA.format(new Date(js[0].inicio))}</b><span>${money(sum)}</span></div>` + js.map(j => `
+        <button class="hist-row" type="button" data-j="${j.id}">
+          <span><b>${esc(j.vendedor)}</b><br><small>${HORA.format(new Date(j.inicio))} – ${j.fin ? HORA.format(new Date(j.fin)) : "abierta"} · ${j.piezas} pieza${j.piezas === 1 ? "" : "s"}</small></span>
+          <span class="r">${money(j.total)}<small>cambio ${money(j.fondo)}</small></span>
+        </button>`).join("");
+    }).join("") : '<div class="empty"><b>Sin jornadas en este periodo</b></div>'}
+    <button class="btn text" type="button" id="histClose">Cerrar</button>`);
+  F("histClose").onclick = closeSheet;
+  $$("[data-dias]", panel).forEach(b => b.onclick = () => { histDias = Number(b.dataset.dias); abrirHistorial(); });
+  $$("[data-j]", panel).forEach(b => b.onclick = () => verJornada(b.dataset.j));
+}
+async function verJornada(id){
+  let j; try{ j = await api("api/jornadas/" + id); }catch(e){ toast(errMsg(e)); return; }
+  openSheet(`<h2>${esc(j.vendedor)}</h2>
+    <p class="lead">${DIA.format(new Date(j.inicio))} · ${HORA.format(new Date(j.inicio))} – ${j.fin ? HORA.format(new Date(j.fin)) : "abierta"}</p>
+    <div class="jor-nums"><div><span>Cambio</span><b>${money(j.fondo)}</b></div><div><span>Vendido</span><b>${money(j.total)}</b></div><div><span>En caja</span><b>${money(j.total + j.fondo)}</b></div></div>
+    <p class="lead">${j.numVentas} venta${j.numVentas === 1 ? "" : "s"} · ${j.piezas} pieza${j.piezas === 1 ? "" : "s"}</p>
+    <div>${j.ventas.map(v => `<div class="sale"><span><b>${v.cantidad}×</b> ${esc(v.nombre)}${v.total ? ` · <b>${fmtPrecio(v.total)}</b>` : ""}</span><time>${HORA.format(new Date(v.fecha))}</time></div>`).join("") || '<p class="lead">Sin ventas.</p>'}</div>
+    <div class="row"><button class="btn ghost" type="button" id="jvBack">Volver al historial</button><button class="btn text" type="button" id="jvClose">Cerrar</button></div>`);
+  F("jvBack").onclick = abrirHistorial;
+  F("jvClose").onclick = closeSheet;
+}
+F("jorHist").onclick = abrirHistorial;
 function renderAll(){ renderStats(); renderInventario(); renderVentasRes(); if(S.loaded) renderCarrito(); if(S.nuevo) renderNotices(); }
 
 /* ---------- fotos: comprimir y recortar ---------- */
@@ -300,9 +411,9 @@ function openEdit(id){
   };
 }
 
-/* ---------- agregar (admin) ---------- */
+/* ---------- agregar (admin y vendedores) ---------- */
 const FIELDS = ["fNombre","fPrecio","fSerie","fNumero","fColor","fAnio","fNotas"];
-if(ADMIN){
+{
   async function onPick(e){
     const file = e.target.files && e.target.files[0]; e.target.value = "";
     if(!file) return;
@@ -519,7 +630,7 @@ F("tOk").onclick = async () => {
       try{ await api("api/ventas/deshacer", { json: { grupo: r.grupo } }); await Promise.all([cargarProductos(), cargarVentas()]); toast("Venta deshecha"); }
       catch(e){ toast(errMsg(e)); }
     });
-  }catch(e){ toast(errMsg(e)); }
+  }catch(e){ if(e && e.sinJornada){ S.jornada = null; renderJornada(); pedirInicio(true); } else toast(errMsg(e)); }
   finally{ btn.disabled = false; renderCarrito(); }
 };
 
@@ -646,5 +757,6 @@ async function abrirUsuarios(){
 
 /* ---------- inicio ---------- */
 route(); medirCabecera();
-cargarProductos(); cargarVentas();
+cargarProductos();
+cargarVentas().then(() => { S.jcarg = true; const v = location.hash.slice(1); if(!S.jornada && (v === "vender" || (!v && !ADMIN))) pedirInicio(false); });
 })();

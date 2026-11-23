@@ -10,5 +10,5 @@
 <title><?= esc($titulo) ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="<?= base_url('assets/app.css') ?>?v=1">
+<link rel="stylesheet" href="<?= base_url('assets/app.css') ?>?v=2">
 </head>

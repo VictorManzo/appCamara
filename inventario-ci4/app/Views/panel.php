@@ -97,6 +97,7 @@
     <div>
       <h2>Registrar venta</h2>
       <p class="lead">Busca cada producto, confírmalo y agrégalo a la venta. Cuando el cliente termine, registra la venta.</p>
+      <p class="jor-strip" id="jorStrip" hidden></p>
     </div>
     <div class="search stick">
       <input id="venQ" class="inp big" type="search" placeholder="Nombre del carrito" autocomplete="off">
@@ -113,17 +114,31 @@
       <button class="btn primary block" id="tOk" type="button">Registrar venta</button>
       <button class="btn text" id="tClear" type="button">Cancelar venta</button>
     </section>
-    <details class="sales" id="salesBox">
-      <summary>Ventas recientes</summary>
-      <div id="salesList"></div>
-    </details>
+    <section class="jornada" id="jorBox" aria-label="Mi jornada">
+      <div class="ticket-head"><h3>Mi jornada</h3><small id="jorDesde"></small></div>
+      <div id="jorSin" class="lead" hidden>No has iniciado tu jornada. <button class="btn primary" id="jorIniciar" type="button">Iniciar jornada</button></div>
+      <div id="jorCon" hidden>
+        <div class="jor-nums">
+          <div><span>Cambio</span><b id="jorFondo">$0</b></div>
+          <div><span>Vendido</span><b id="jorTotal">$0</b></div>
+          <div><span>En caja</span><b id="jorCaja">$0</b></div>
+        </div>
+        <p class="lead" id="jorPiezas" style="font-size:14px"></p>
+        <details class="sales" id="salesBox">
+          <summary>Ventas de esta jornada</summary>
+          <div id="salesList"></div>
+        </details>
+        <button class="btn dark block" id="jorFin" type="button">Finalizar jornada</button>
+      </div>
+      <button class="btn ghost block" id="jorHist" type="button">Historial de ventas por día</button>
+    </section>
   </section>
 </main>
 
 <nav class="tabs" aria-label="Secciones">
   <div class="wrap">
     <a class="tab owner-only" href="#inventario" data-tab="inventario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Inventario</a>
-    <a class="tab add owner-only" href="#agregar" data-tab="agregar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Agregar</a>
+    <a class="tab add" href="#agregar" data-tab="agregar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Agregar</a>
     <a class="tab seller-only" href="<?= site_url('catalogo') ?>" data-tab="catalogo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 9h16"/></svg>Catálogo</a>
     <a class="tab" href="#vender" data-tab="vender"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Vender</a>
   </div>
@@ -139,6 +154,6 @@ window.PETUS = <?= json_encode([
     'contacto' => $contacto,
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
 </script>
-<script src="<?= base_url('assets/panel.js') ?>?v=2"></script>
+<script src="<?= base_url('assets/panel.js') ?>?v=3"></script>
 </body>
 </html>

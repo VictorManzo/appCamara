@@ -3,8 +3,8 @@
 namespace App\Libraries;
 
 /**
- * Aplica las migraciones nuevas solas (por ejemplo la tabla de pedidos) en sitios que ya
- * estaban instalados, para no tener que entrar por consola.
+ * Aplica las migraciones nuevas solas (pedidos, jornadas…) en sitios que ya estaban
+ * instalados, para no tener que entrar por consola.
  */
 class Esquema
 {
@@ -18,7 +18,7 @@ class Esquema
         self::$listo = true;
         try {
             $db = db_connect();
-            if ($db->tableExists('usuarios') && ! $db->tableExists('pedidos')) {
+            if ($db->tableExists('usuarios') && (! $db->tableExists('pedidos') || ! $db->tableExists('jornadas'))) {
                 service('migrations')->setNamespace('App')->latest();
             }
         } catch (\Throwable $e) {

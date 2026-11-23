@@ -44,6 +44,12 @@ class Ventas extends BaseController
             return $this->response->setStatusCode(422)->setJSON(['error' => 'La venta está vacía.']);
         }
 
+        \App\Libraries\Esquema::asegurar();
+        $jornada = Jornadas::abierta((int) session()->get('usuario_id'));
+        if (! $jornada) {
+            return $this->response->setStatusCode(409)->setJSON(['error' => 'Primero inicia tu jornada (con o sin cambio).', 'sinJornada' => true]);
+        }
+
         $db = db_connect();
         $grupo = 'v' . bin2hex(random_bytes(6));
         $ahora = date('Y-m-d H:i:s');
@@ -71,6 +77,7 @@ class Ventas extends BaseController
             $db->table('ventas')->insert([
                 'grupo' => $grupo, 'producto_id' => $id, 'nombre' => $p['nombre'] ?: 'Sin nombre', 'cantidad' => $vend,
                 'precio' => $precio, 'total' => $sub, 'usuario_id' => $usuario ?: null, 'created_at' => $ahora,
+                'jornada_id' => (int) $jornada['id'],
             ]);
             $piezas += $vend; $total += (float) $sub;
         }
@@ -97,6 +104,13 @@ class Ventas extends BaseController
             $reciente = strtotime($filas[0]['created_at']) > time() - 1800;
             if (! $mia || ! $reciente) {
                 return $this->response->setStatusCode(403)->setJSON(['error' => 'Solo puedes deshacer tus ventas de los últimos 30 minutos.']);
+            }
+        }
+        // una jornada ya finalizada no se modifica
+        if (! empty($filas[0]['jornada_id'])) {
+            $j = $db->table('jornadas')->where('id', $filas[0]['jornada_id'])->get()->getRowArray();
+            if ($j && $j['estado'] !== 'abierta') {
+                return $this->response->setStatusCode(409)->setJSON(['error' => 'Esa venta es de una jornada ya finalizada; no se puede deshacer.']);
             }
         }
         $db->transStart();
