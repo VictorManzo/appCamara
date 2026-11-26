@@ -78,7 +78,14 @@ class Usuarios extends BaseController
     public function ajustes()
     {
         $r = $this->request->getJSON(true) ?? [];
-        (new AjusteModel())->guardar('contacto', mb_substr(trim(strip_tags((string) ($r['contacto'] ?? ''))), 0, 300));
+        $a = new AjusteModel();
+        $limpio = static fn ($k, $max) => mb_substr(trim(strip_tags((string) ($r[$k] ?? ''))), 0, $max);
+        $a->guardar('contacto', $limpio('contacto', 300));
+        foreach (['aviso_responsable' => 150, 'aviso_domicilio' => 300, 'aviso_correo' => 150] as $k => $max) {
+            if (array_key_exists($k, $r)) {
+                $a->guardar($k, $limpio($k, $max));
+            }
+        }
         return $this->response->setJSON(['ok' => true]);
     }
 

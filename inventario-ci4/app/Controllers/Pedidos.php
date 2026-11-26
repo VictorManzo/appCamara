@@ -27,6 +27,9 @@ class Pedidos extends BaseController
         if ($cliente === '' || strlen(preg_replace('/\D/', '', $telefono)) < 8) {
             return $this->error('Escribe tu nombre y un teléfono de contacto.');
         }
+        if (empty($r['acepta_aviso'])) {
+            return $this->error('Para enviar tu pedido acepta el Aviso de privacidad.');
+        }
 
         $db = db_connect();
         $ip = $this->request->getIPAddress();
@@ -62,7 +65,7 @@ class Pedidos extends BaseController
         $db->table('pedidos')->insert([
             'codigo' => $codigo, 'cliente' => $cliente, 'telefono' => $telefono, 'nota' => $nota,
             'items' => json_encode($items, JSON_UNESCAPED_UNICODE), 'total' => round($total, 2),
-            'estado' => 'nuevo', 'ip' => $ip, 'created_at' => date('Y-m-d H:i:s'),
+            'estado' => 'nuevo', 'ip' => $ip, 'created_at' => date('Y-m-d H:i:s'), 'aviso_aceptado' => date('Y-m-d H:i:s'),
         ]);
 
         $texto = self::textoPedido($codigo, $cliente, $telefono, $nota, $items, $total, $sinPrecio, true);

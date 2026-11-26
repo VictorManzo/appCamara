@@ -19,7 +19,13 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
 .petus-cat .hero h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:clamp(36px,9vw,64px);line-height:.95;text-transform:uppercase;letter-spacing:.01em;color:#fff;position:relative;z-index:1}
 .petus-cat .hero p{margin:4px 0 0;font-size:15px;opacity:.92;position:relative;z-index:1}
 .petus-cat .count{align-self:flex-start;margin-top:6px;background:rgba(0,0,0,.25);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;position:relative;z-index:1}
-.petus-cat .bar{display:flex;gap:8px;position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-block:8px;margin-block:-8px;box-shadow:0 8px 8px -8px rgba(20,24,28,.18)}
+.petus-cat .fijo{display:flex;flex-direction:column;gap:8px;position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-block:8px;margin-block:-8px;box-shadow:0 8px 8px -8px rgba(20,24,28,.18)}
+.petus-cat .bar{display:flex;gap:8px}
+.petus-cat .hacer{width:100%;background:#15181c;color:#fff;min-height:50px;font-size:17px}
+.petus-cat .hacer.on{background:var(--surface);color:var(--ink);border:2px solid #15181c}
+.petus-cat .nuevo{position:absolute;right:8px;top:8px;z-index:1;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#17804a;color:#fff;font-family:var(--f-display);font-weight:700;font-size:18px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.petus-cat .legal{text-align:center;font-size:13px;margin:0}
+.petus-cat .legal a{color:var(--muted)}
 .petus-cat .inp{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px;min-height:48px}
 .petus-cat .btn{appearance:none;border:1px solid transparent;border-radius:10px;padding:12px 16px;font-weight:600;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;line-height:1.1}
 .petus-cat .btn.ghost{background:var(--surface);border-color:var(--line);color:var(--ink)}
@@ -97,6 +103,10 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
 .petus-sheet .wa{background:#1f9d55;color:#fff;border:0;text-decoration:none;display:flex;align-items:center;justify-content:center}
 .petus-sheet .block{width:100%}
 .petus-sheet .msg{background:#fdf1dc;color:#7a4a05;border:1px solid #efc77d;border-radius:10px;padding:10px 12px;font-size:14px}
+.petus-sheet .acepto{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.35;color:#15181c;cursor:pointer;background:#f5f6f8;border-radius:10px;padding:10px 12px}
+.petus-sheet .acepto input{width:22px;height:22px;flex:none;margin:0;accent-color:#e8550f}
+.petus-sheet .acepto a{color:#1846c4}
+.petus-sheet .orange:disabled{opacity:.45;cursor:not-allowed}
 .petus-sheet .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .petus-sheet .monto{font:700 34px "Barlow Condensed",sans-serif;margin:0}
 .petus-sheet p{margin:0;line-height:1.4}
@@ -108,14 +118,18 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
     <p class="contacto" hidden></p>
     <span class="count"></span>
   </header>
+  <div class="fijo">
+  <button class="btn hacer" type="button" aria-pressed="false">Hacer pedido</button>
   <div class="bar">
     <input class="inp q" type="search" placeholder="Buscar modelo, serie o color" aria-label="Buscar en el catálogo" autocomplete="off">
     <button class="btn ghost filt" type="button" aria-label="Ordenar y filtrar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtros <span class="fbadge" hidden></span></button>
+  </div>
   </div>
   <button class="btn primary pdf" type="button">Descargar catálogo en PDF</button>
   <div class="grid"></div>
   <div class="empty" hidden>Por ahora no hay productos disponibles.</div>
   <p class="note"></p>
+  <p class="legal"><a href="<?= site_url('aviso-de-privacidad') ?>">Aviso de privacidad</a></p>
   <script type="application/json" class="petus-data"><?= $json ?></script>
 </div>
 <div class="petus-cartbar" id="petusCartbar" hidden><button type="button"><span><span class="n"></span>Ver mi pedido</span><b></b></button></div>
@@ -128,7 +142,9 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
   var $ = function(s){ return root.querySelector(s); };
   var MXN = new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0,maximumFractionDigits:2});
   var CAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 15v-3l2-1 2-4h8l3 4 3 1v3h-2"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path d="M9 16h6"/></svg>';
-  var PAGE = 36, limite = PAGE, orden = 'novedades', rangos = [];
+  var PAGE = 36, limite = PAGE, orden = '', rangos = [];
+  var MES = 30 * 24 * 3600 * 1000;
+  function esNuevo(p){ return p.creado && (Date.now() - p.creado) < MES; }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function norm(s){ return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
   function precio(p){ return (p.precio > 0) ? p.precio : null; }
@@ -148,8 +164,7 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
     else l = P.slice();
     if(rangos.length){ l = l.filter(function(p){ var v = precio(p); return v != null && rangos.some(function(k){ var r = k.split('-').map(Number); return v >= r[0] && v <= r[1]; }); }); }
     var pv = function(p){ var v = precio(p); return v == null ? Infinity : v; };
-    if(orden === 'vendido') l.sort(function(a,b){ return (b.vendidos||0) - (a.vendidos||0) || b.creado - a.creado; });
-    else if(orden === 'descuentos') l.sort(function(a,b){ return desc(b) - desc(a) || b.creado - a.creado; });
+    if(orden === 'nuevo'){ l = l.filter(esNuevo); l.sort(function(a,b){ return b.creado - a.creado; }); }
     else if(orden === 'bajo') l.sort(function(a,b){ return pv(a) - pv(b); });
     else if(orden === 'alto') l.sort(function(a,b){ return (precio(b)||-1) - (precio(a)||-1); });
     else if(!q) l.sort(function(a,b){ return b.creado - a.creado; });
@@ -158,16 +173,16 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
   function card(p){
     var pr = precio(p), off = desc(p), st = p.cantidad;
     return '<article class="bl"><div class="band"><span>' + esc(p.serie || (p.hw ? 'Hot Wheels' : 'Coleccionable')) + '</span>' + (p.numero ? '<span class="num">' + esc(p.numero) + '</span>' : '') + '</div>' +
-      '<div class="bubble">' + (off ? '<span class="off">-' + off + '%</span>' : '') + (p.img ? '<img src="' + esc(p.img) + '" alt="' + esc(p.nombre) + '" loading="lazy" decoding="async" width="420" height="420">' : CAR) + '</div>' +
+      '<div class="bubble">' + (off ? '<span class="off">-' + off + '%</span>' : '') + (esNuevo(p) ? '<span class="nuevo" title="Nuevo">N</span>' : '') + (p.img ? '<img src="' + esc(p.img) + '" alt="' + esc(p.nombre) + '" loading="lazy" decoding="async" width="420" height="420">' : CAR) + '</div>' +
       '<div class="body"><div class="name">' + esc(p.nombre) + '</div>' + ([p.color, p.anio].filter(Boolean).length ? '<div class="meta">' + [p.color, p.anio].filter(Boolean).map(esc).join(' · ') + '</div>' : '') +
       '<div class="foot">' + (pr != null ? '<span>' + (antes(p) ? '<span class="was">' + fmt(antes(p)) + '</span>' : '') + '<span class="tag"><b>' + fmt(pr) + '</b></span></span>' : '<span class="tag ask"><b>Precio a consultar</b></span>') +
       '<span class="stock">' + (st === 1 ? 'Última pieza' : st + ' disponibles') + '</span></div>' +
-      '<div class="buy" data-id="' + p.id + '">' + botonCompra(p) + '</div></div></article>';
+      (modoPedido ? '<div class="buy" data-id="' + p.id + '">' + botonCompra(p) + '</div>' : '') + '</div></article>';
   }
   var obs = ('IntersectionObserver' in window) ? new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ obs.unobserve(e.target); limite += PAGE; render(); } }); }, {rootMargin:'400px'}) : null;
   function render(){
     var l = lista(), total = l.length, vis = l.slice(0, limite);
-    var nf = (orden !== 'novedades' ? 1 : 0) + rangos.length, b = $('.fbadge');
+    var nf = (orden ? 1 : 0) + rangos.length, b = $('.fbadge');
     b.hidden = !nf; b.textContent = nf;
     $('.grid').innerHTML = vis.map(card).join('') + (total > vis.length ? '<button class="btn ghost more" type="button">Ver más (' + (total - vis.length) + ')</button>' : '') || (P.length ? '<p class="note">Nada coincide con la búsqueda o los filtros.</p>' : '');
     var m = $('.more'); if(m){ m.onclick = function(){ limite += PAGE; render(); }; if(obs) obs.observe(m); }
@@ -192,6 +207,15 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
     return { piezas: piezas, total: total, sinPrecio: sinPrecio };
   }
   var bar = document.getElementById('petusCartbar'); document.body.appendChild(bar);
+  var modoPedido = false;
+  function ponerModo(on){
+    modoPedido = on;
+    var h = $('.hacer');
+    h.classList.toggle('on', on); h.setAttribute('aria-pressed', on ? 'true' : 'false');
+    h.textContent = on ? 'Listo, dejar de agregar' : 'Hacer pedido';
+    render();
+  }
+  $('.hacer').onclick = function(){ ponerModo(!modoPedido); };
   function pintarBarra(){
     var r = resumen();
     bar.hidden = !r.piezas;
@@ -229,6 +253,7 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
       '<hr><label class="f">Tu nombre<input class="inp" id="pNombre" autocomplete="name" value="' + esc(datosCliente.nombre || '') + '"></label>' +
       '<label class="f">Teléfono o WhatsApp<input class="inp" id="pTel" type="tel" autocomplete="tel" inputmode="tel" value="' + esc(datosCliente.tel || '') + '"></label>' +
       '<label class="f">Nota (opcional)<input class="inp" id="pNota" placeholder="Ej. entrega en el centro, pago en efectivo"></label>' +
+      '<label class="acepto"><input type="checkbox" id="pAviso"' + (datosCliente.aviso ? ' checked' : '') + '><span>He leído y acepto el <a href="' + BASE + 'aviso-de-privacidad" target="_blank" rel="noopener">Aviso de privacidad</a>. Usaremos tu nombre y teléfono solo para atender este pedido.</span></label>' +
       '<div class="hp" aria-hidden="true"><label>No llenar<input id="pSitio" tabindex="-1" autocomplete="off"></label></div>' +
       '<p class="msg" id="pMsg" hidden></p>' +
       '<div class="foot"><button class="btn outline" type="button" id="pSeguir">Seguir viendo</button><button class="btn orange" type="button" id="pEnviar">Enviar pedido</button></div>');
@@ -239,16 +264,21 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
       row.querySelectorAll('[data-d]').forEach(function(b){ b.onclick = function(){ guardarCliente(); cambiar(id, Number(b.dataset.d)); abrirPedido(); }; });
       row.querySelector('[data-quitar]').onclick = function(){ guardarCliente(); cambiar(id, -999); abrirPedido(); };
     });
+    var chk = panel.querySelector('#pAviso'), env = panel.querySelector('#pEnviar');
+    env.disabled = !chk.checked;
+    chk.onchange = function(){ env.disabled = !chk.checked; datosCliente.aviso = chk.checked; };
     panel.querySelector('#pEnviar').onclick = function(){
       guardarCliente();
       var msg = panel.querySelector('#pMsg');
+      if(!chk.checked){ msg.hidden = false; msg.textContent = 'Para enviar tu pedido acepta el Aviso de privacidad.'; return; }
       if(!datosCliente.nombre || (datosCliente.tel || '').replace(/\D/g, '').length < 8){ msg.hidden = false; msg.textContent = 'Escribe tu nombre y un teléfono para poder contactarte.'; return; }
       confirmar(panel.querySelector('#pNota').value.trim(), panel.querySelector('#pSitio').value);
     };
   }
   function guardarCliente(){
     var n = document.getElementById('pNombre'), t = document.getElementById('pTel');
-    if(n) datosCliente = { nombre: n.value.trim(), tel: t.value.trim() };
+    var av = document.getElementById('pAviso');
+    if(n) datosCliente = { nombre: n.value.trim(), tel: t.value.trim(), aviso: av ? av.checked : !!datosCliente.aviso };
     try{ localStorage.setItem('petusCliente', JSON.stringify(datosCliente)); }catch(e){}
   }
   function confirmar(nota, sitio){
@@ -262,7 +292,7 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
       var btn = this; btn.disabled = true; btn.textContent = 'Enviando…';
       var h = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }; h[CSRF_H] = CSRF_T;
       fetch(BASE + 'pedido', { method: 'POST', credentials: 'same-origin', headers: h, body: JSON.stringify({
-        cliente: datosCliente.nombre, telefono: datosCliente.tel, nota: nota, sitio_web: sitio,
+        cliente: datosCliente.nombre, telefono: datosCliente.tel, nota: nota, sitio_web: sitio, acepta_aviso: !!datosCliente.aviso,
         items: Object.keys(carrito).map(function(id){ return { id: Number(id), cantidad: carrito[id] }; }) }) })
       .then(function(res){ return res.json().then(function(j){ if(!res.ok) throw j; return j; }); })
       .then(function(j){
@@ -295,7 +325,7 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
     if(cur) groups.push(cur);
     return groups.map(function(g){ return { key: g.min + '-' + g.max, label: g.min === g.max ? fmt(g.min) : fmt(g.min) + ' - ' + fmt(g.max), n: ps.filter(function(v){ return v >= g.min && v <= g.max; }).length }; });
   }
-  var ORD = [['vendido','Lo más vendido'],['novedades','Novedades'],['descuentos','Descuentos'],['bajo','Precio más bajo'],['alto','Precio más alto']];
+  var ORD = [['nuevo','Lo más nuevo'],['bajo','Precio más bajo'],['alto','Precio más alto']];
   function cerrar(){ sheet.hidden = true; document.documentElement.style.overflow = ''; }
   function abrir(){
     var rs = rangosPrecio(), panel = sheet.querySelector('.panel');
@@ -305,9 +335,9 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
       '<div class="foot"><button class="btn outline limpiar" type="button">Limpiar filtros</button><button class="btn dark aplicar" type="button">Filtrar</button></div>';
     sheet.hidden = false; document.documentElement.style.overflow = 'hidden';
     panel.querySelector('.x').onclick = cerrar;
-    panel.querySelector('.limpiar').onclick = function(){ orden = 'novedades'; rangos = []; limite = PAGE; cerrar(); render(); };
+    panel.querySelector('.limpiar').onclick = function(){ orden = ''; rangos = []; limite = PAGE; cerrar(); render(); };
     panel.querySelector('.aplicar').onclick = function(){
-      var o = panel.querySelector('input[name="petusOrden"]:checked'); orden = o ? o.value : 'novedades';
+      var o = panel.querySelector('input[name="petusOrden"]:checked'); orden = o ? o.value : '';
       rangos = Array.prototype.map.call(panel.querySelectorAll('input[name="petusRango"]:checked'), function(i){ return i.value; });
       limite = PAGE; cerrar(); render(); root.scrollIntoView({behavior:'smooth', block:'start'});
     };
@@ -369,6 +399,7 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
         var bx = x + 3, by = y + 10.5, bw = cw - 6;
         doc.setFillColor(245,246,248); doc.roundedRect(bx, by, bw, imgH, 3, 3, 'F');
         var im = imgs[idx]; if(im){ var k = Math.min((bw - 3) / im.w, (imgH - 3) / im.h), iw = im.w * k, ih = im.h * k; doc.addImage(im.url, 'JPEG', bx + (bw - iw)/2, by + (imgH - ih)/2, iw, ih, undefined, 'FAST'); }
+        if(esNuevo(p)){ doc.setFillColor(23,128,74); doc.circle(bx + bw - 4.5, by + 4.5, 3.4, 'F'); doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text('N', bx + bw - 4.5, by + 5.7, {align:'center'}); }
         var off = desc(p); if(off){ doc.setFillColor(192,53,42); doc.roundedRect(bx + 1.5, by + 1.5, 13, 5, 2.5, 2.5, 'F'); doc.setTextColor(255,255,255); doc.setFontSize(7); doc.text('-' + off + '%', bx + 8, by + 5, {align:'center'}); }
         doc.setTextColor.apply(doc, INK); doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
         doc.text(doc.splitTextToSize(latin(p.nombre).toUpperCase(), cw - 6).slice(0, 2), x + 3, by + imgH + 5.5);
@@ -387,6 +418,7 @@ $json = json_encode(['productos' => $datos, 'contacto' => $contacto, 'fecha' => 
     }).catch(function(){ alert('No se pudo crear el PDF. Intenta de nuevo.'); }).then(function(){ haciendo = false; btn.disabled = false; btn.textContent = 'Descargar catálogo en PDF'; });
   };
   limpiarCarrito(); guardar(); pintarBarra();
+  if(Object.keys(carrito).length) ponerModo(true);
   render();
 })();
 </script>

@@ -9,6 +9,7 @@ $routes->setAutoRoute(false);
 $routes->get('/', 'Auth::inicio');
 $routes->get('catalogo', 'Catalogo::index');
 $routes->post('pedido', 'Pedidos::crear');
+$routes->get('aviso-de-privacidad', 'Catalogo::aviso');
 $routes->get('entrar', 'Auth::entrar');
 $routes->post('entrar', 'Auth::procesarEntrada');
 $routes->get('salir', 'Auth::salir');

@@ -17,6 +17,11 @@ class Panel extends BaseController
                 'rol'    => (string) $s->get('rol'),
             ],
             'contacto' => (new AjusteModel())->leer('contacto'),
+            'aviso'    => [
+                'responsable' => (new AjusteModel())->leer('aviso_responsable'),
+                'domicilio'   => (new AjusteModel())->leer('aviso_domicilio'),
+                'correo'      => (new AjusteModel())->leer('aviso_correo'),
+            ],
         ]);
     }
 }

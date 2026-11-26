@@ -713,10 +713,16 @@ if(ADMIN){
   F("btnContacto").onclick = () => {
     openSheet(`<h2>Contacto del catálogo</h2>
       <label class="field"><span>Contacto o mensaje</span><textarea id="cContacto" class="inp" placeholder="Pedidos por WhatsApp al 55 1234 5678 · Entregas en …">${esc(P.contacto)}</textarea></label>
+      <hr class="sep"><h3 class="opt-title">Aviso de privacidad</h3>
+      <p class="lead" style="font-size:14px">Estos datos aparecen en tu <a href="${P.base}aviso-de-privacidad" target="_blank" rel="noopener">Aviso de privacidad</a>. La ley pide el nombre del responsable, su domicilio y un medio para que los clientes ejerzan sus derechos.</p>
+      <label class="field"><span>Responsable (nombre del negocio o persona)</span><input id="cResp" class="inp" placeholder="Juguetería PETUS" value="${esc(P.aviso.responsable)}"></label>
+      <label class="field"><span>Domicilio</span><input id="cDom" class="inp" placeholder="Calle, número, colonia, ciudad, estado, C.P." value="${esc(P.aviso.domicilio)}"></label>
+      <label class="field"><span>Correo para privacidad</span><input id="cMail" class="inp" type="email" placeholder="privacidad@tucorreo.com" value="${esc(P.aviso.correo)}"></label>
       <button class="btn primary block" id="cSave">Guardar</button><button class="btn text" id="cClose">Cerrar</button>`);
     F("cClose").onclick = closeSheet;
     F("cSave").onclick = async () => {
-      try{ await api("api/ajustes", { json: { contacto: F("cContacto").value.trim() } }); P.contacto = F("cContacto").value.trim(); closeSheet(); toast("Contacto guardado"); }
+      const d = { contacto: F("cContacto").value.trim(), aviso_responsable: F("cResp").value.trim(), aviso_domicilio: F("cDom").value.trim(), aviso_correo: F("cMail").value.trim() };
+      try{ await api("api/ajustes", { json: d }); P.contacto = d.contacto; P.aviso = { responsable: d.aviso_responsable, domicilio: d.aviso_domicilio, correo: d.aviso_correo }; closeSheet(); toast("Guardado"); }
       catch(e){ toast(errMsg(e)); }
     };
   };

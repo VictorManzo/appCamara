@@ -31,4 +31,16 @@ class Catalogo extends BaseController
             'logueado'  => (bool) session()->get('usuario_id'),
         ]);
     }
+
+    /** Aviso de privacidad integral (Ley Federal de Protección de Datos Personales en Posesión de los Particulares). */
+    public function aviso()
+    {
+        $a = new AjusteModel();
+        return view('aviso', [
+            'responsable' => $a->leer('aviso_responsable') ?: 'Juguetería PETUS',
+            'domicilio'   => $a->leer('aviso_domicilio'),
+            'correo'      => $a->leer('aviso_correo'),
+            'contacto'    => $a->leer('contacto'),
+        ]);
+    }
 }

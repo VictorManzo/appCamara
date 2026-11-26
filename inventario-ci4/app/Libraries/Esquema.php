@@ -19,7 +19,8 @@ class Esquema
         try {
             $db = db_connect();
             if ($db->tableExists('usuarios') && (! $db->tableExists('pedidos') || ! $db->tableExists('jornadas')
-                || ! $db->fieldExists('huella', 'productos') || ! $db->fieldExists('dueno', 'ventas'))) {
+                || ! $db->fieldExists('huella', 'productos') || ! $db->fieldExists('dueno', 'ventas')
+                || ! $db->fieldExists('aviso_aceptado', 'pedidos'))) {
                 service('migrations')->setNamespace('App')->latest();
             }
         } catch (\Throwable $e) {
